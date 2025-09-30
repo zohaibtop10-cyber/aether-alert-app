@@ -42,21 +42,15 @@ export default function Home() {
   const [currentConditions, setCurrentConditions] = useState<CurrentConditions>(
     getMockCurrentConditions()
   );
-  const [dailyForecast, setDailyForecast] = useState<Forecast[]>(
-    getMockForecast('daily')
-  );
-  const [hourlyForecast, setHourlyForecast] = useState<Forecast[]>(
-    getMockForecast('hourly')
-  );
+  const [dailyForecast, setDailyForecast] = useState<Forecast[]>([]);
+  const [hourlyForecast, setHourlyForecast] = useState<Forecast[]>([]);
 
   useEffect(() => {
-    if (location) {
-      // In a real app, you would fetch data from a weather API using the location coordinates.
-      // For now, we'll just re-initialize the mock data to simulate an update.
-      setCurrentConditions(getMockCurrentConditions());
-      setDailyForecast(getMockForecast('daily'));
-      setHourlyForecast(getMockForecast('hourly'));
-    }
+    // In a real app, you would fetch data from a weather API using the location coordinates.
+    // For now, we'll just re-initialize the mock data to simulate an update.
+    setCurrentConditions(getMockCurrentConditions());
+    setDailyForecast(getMockForecast('daily'));
+    setHourlyForecast(getMockForecast('hourly'));
   }, [location]);
 
   const historicalData7d = getMockHistoricalData(7);
