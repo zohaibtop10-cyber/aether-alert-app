@@ -1,20 +1,21 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useTransition } from 'react';
 import Header from '@/components/dashboard/header';
 import { HealthAlertCard } from '@/components/dashboard/health-alert-card';
 import { InfoCard } from '@/components/dashboard/info-card';
 import { AirQualityCard } from '@/components/dashboard/air-quality-card';
 import { ForecastTabs } from '@/components/dashboard/forecast-tabs';
 import { HistoricalChartCard } from '@/components/dashboard/historical-chart-card';
+import { getWeatherData } from './actions/get-weather-data';
 import {
-  getMockCurrentConditions,
   getMockForecast,
   getMockHistoricalData,
 } from '@/lib/placeholder-data';
 import { Thermometer, Droplets, CloudRain, VolumeX } from 'lucide-react';
 import type { CurrentConditions, Forecast, HistoricalDataPoint } from '@/lib/types';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 import { useLocation } from '@/hooks/use-location';
 
 const getAirQualitySummary = (
@@ -37,26 +38,38 @@ const getAirQualitySummary = (
 };
 
 export default function Home() {
-  const { location, isLocating, isLocationEnabled, error } = useLocation();
+  const { location, isLocating, error } = useLocation();
+  const [isPending, startTransition] = useTransition();
 
-  const [currentConditions, setCurrentConditions] = useState<CurrentConditions>(
-    getMockCurrentConditions()
-  );
+  const [currentConditions, setCurrentConditions] = useState<CurrentConditions | null>(null);
   const [dailyForecast, setDailyForecast] = useState<Forecast[]>([]);
   const [hourlyForecast, setHourlyForecast] = useState<Forecast[]>([]);
+  const [apiError, setApiError] = useState<string | null>(null);
 
   useEffect(() => {
-    // In a real app, you would fetch data from a weather API using the location coordinates.
-    // For now, we'll just re-initialize the mock data to simulate an update.
-    setCurrentConditions(getMockCurrentConditions());
-    setDailyForecast(getMockForecast('daily'));
-    setHourlyForecast(getMockForecast('hourly'));
+    // When location is available, fetch the weather data
+    if (location) {
+      startTransition(async () => {
+        setApiError(null);
+        const result = await getWeatherData({ lat: location.lat, lon: location.lon });
+        if (result.success) {
+          setCurrentConditions(result.data.current);
+          // For now, we'll continue to use mock data for forecast and historical.
+          setDailyForecast(getMockForecast('daily'));
+          setHourlyForecast(getMockForecast('hourly'));
+        } else {
+          setApiError(result.error);
+        }
+      });
+    }
   }, [location]);
 
   const historicalData7d = getMockHistoricalData(7);
   const historicalData30d = getMockHistoricalData(30);
 
   const airQualitySummary = getAirQualitySummary(currentConditions?.airQuality);
+
+  const isLoading = isLocating || isPending;
 
   return (
     <div className="flex min-h-screen w-full flex-col bg-background text-foreground">
@@ -72,55 +85,89 @@ export default function Home() {
             </CardContent>
           </Card>
         )}
-
-        <HealthAlertCard currentConditions={currentConditions} />
-
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
-          <InfoCard
-            title="Temperature"
-            value={currentConditions.temperature}
-            unit="°C"
-            icon={<Thermometer className="size-6 text-muted-foreground" />}
-            description="Current ambient temperature"
-          />
-          <InfoCard
-            title="Humidity"
-            value={currentConditions.humidity}
-            unit="%"
-            icon={<Droplets className="size-6 text-muted-foreground" />}
-            description="Relative humidity level"
-          />
-          <InfoCard
-            title="Rain Chance"
-            value={currentConditions.rainChance}
-            unit="%"
-            icon={<CloudRain className="size-6 text-muted-foreground" />}
-            description="Probability of precipitation"
-          />
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                Noise Pollution
-              </CardTitle>
-              <VolumeX className="size-6 text-muted-foreground" />
+        {apiError && (
+          <Card className="bg-destructive text-destructive-foreground">
+            <CardHeader>
+              <CardTitle>Data Fetching Error</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-xs text-muted-foreground">
-                No NASA data available. This is a placeholder.
-              </p>
+              <p>{apiError}</p>
             </CardContent>
           </Card>
+        )}
+
+        {isLoading || !currentConditions ? (
+          <Skeleton className="h-[200px] w-full" />
+        ) : (
+          <HealthAlertCard currentConditions={currentConditions} />
+        )}
+
+
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
+          {isLoading || !currentConditions ? (
+            <>
+              <Skeleton className="h-[125px] w-full" />
+              <Skeleton className="h-[125px] w-full" />
+              <Skeleton className="h-[125px] w-full" />
+              <Skeleton className="h-[125px] w-full" />
+            </>
+          ) : (
+            <>
+              <InfoCard
+                title="Temperature"
+                value={currentConditions.temperature}
+                unit="°C"
+                icon={<Thermometer className="size-6 text-muted-foreground" />}
+                description="Current ambient temperature"
+              />
+              <InfoCard
+                title="Humidity"
+                value={currentConditions.humidity}
+                unit="%"
+                icon={<Droplets className="size-6 text-muted-foreground" />}
+                description="Relative humidity level"
+              />
+              <InfoCard
+                title="Rain Chance"
+                value={currentConditions.rainChance}
+                unit="%"
+                icon={<CloudRain className="size-6 text-muted-foreground" />}
+                description="Probability of precipitation"
+              />
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">
+                    Noise Pollution
+                  </CardTitle>
+                  <VolumeX className="size-6 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <p className="text-xs text-muted-foreground">
+                    No NASA data available. This is a placeholder.
+                  </p>
+                </CardContent>
+              </Card>
+            </>
+          )}
         </div>
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
           <div className="lg:col-span-1">
-            <AirQualityCard
-              airQuality={currentConditions.airQuality}
-              summary={airQualitySummary}
-            />
+             {isLoading || !currentConditions ? (
+                <Skeleton className="h-[350px] w-full" />
+              ) : (
+                <AirQualityCard
+                  airQuality={currentConditions.airQuality}
+                  summary={airQualitySummary}
+                />
+             )}
           </div>
           <div className="lg:col-span-2">
-            <ForecastTabs daily={dailyForecast} hourly={hourlyForecast} />
+             {isLoading || dailyForecast.length === 0 ? (
+                <Skeleton className="h-[350px] w-full" />
+              ) : (
+                <ForecastTabs daily={dailyForecast} hourly={hourlyForecast} />
+              )}
           </div>
         </div>
 

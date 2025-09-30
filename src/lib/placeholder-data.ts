@@ -1,17 +1,6 @@
-import type { CurrentConditions, Forecast, HistoricalDataPoint } from './types';
+import type { Forecast, HistoricalDataPoint } from './types';
 
-export const getMockCurrentConditions = (): CurrentConditions => ({
-  temperature: 25.4,
-  humidity: 60,
-  rainChance: 20,
-  airQuality: {
-    pm25: 18.5,
-    o3: 45.2,
-    co: 1.1,
-    no2: 15.6,
-  },
-  noiseLevel: 0, // Placeholder
-});
+// The getMockCurrentConditions function is no longer needed as we will fetch real data.
 
 export const getMockForecast = (type: 'daily' | 'hourly'): Forecast[] => {
   const forecast: Forecast[] = [];
