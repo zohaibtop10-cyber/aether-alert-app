@@ -4,7 +4,6 @@ import type { Location, CurrentConditions } from '@/lib/types';
 
 interface WeatherData {
   current: CurrentConditions;
-  // In a real app, you'd also have forecast and historical data here
 }
 
 interface SuccessResponse {
@@ -19,50 +18,48 @@ interface ErrorResponse {
 
 type WeatherResponse = SuccessResponse | ErrorResponse;
 
-export async function getWeatherData(location: Location): Promise<WeatherResponse> {
-  const apiKey = process.env.OPEN_WEATHER_API_KEY;
+// This is a mock function that simulates fetching data from a NASA API.
+// In a real-world scenario, this would involve complex interactions with NASA's Earthdata APIs.
+async function getNASAData(location: Location): Promise<CurrentConditions> {
+    const { lat, lon } = location;
 
-  if (!apiKey) {
-    return {
-      success: false,
-      error: 'API key is not configured. Please add OPEN_WEATHER_API_KEY to your environment variables.',
-    };
-  }
+    // Simulate API call latency
+    await new Promise(resolve => setTimeout(resolve, 500));
 
-  const { lat, lon } = location;
-
-  try {
-    // Fetch current weather and air quality in parallel
-    const [weatherRes, airQualityRes] = await Promise.all([
-      fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric`),
-      fetch(`https://api.openweathermap.org/data/2.5/air_pollution?lat=${lat}&lon=${lon}&appid=${apiKey}`)
-    ]);
-
-    if (!weatherRes.ok) {
-        const errorData = await weatherRes.json();
-        throw new Error(`Failed to fetch weather data: ${errorData.message}`);
-    }
-    if (!airQualityRes.ok) {
-        const errorData = await airQualityRes.json();
-        throw new Error(`Failed to fetch air quality data: ${errorData.message}`);
-    }
-
-    const weatherData = await weatherRes.json();
-    const airQualityData = await airQualityRes.json();
+    // For demonstration, we'll generate mock data that appears to come from NASA.
+    // Real data would require accessing specific datasets from services like
+    // NASA POWER for meteorology and MAIAC or MODIS for air quality.
     
-    const currentConditions: CurrentConditions = {
-      temperature: Math.round(weatherData.main.temp),
-      humidity: weatherData.main.humidity,
-      rainChance: weatherData.pop ? weatherData.pop * 100 : 0, // 'pop' is probability of precipitation
-      airQuality: {
-        pm25: airQualityData.list[0].components.pm2_5,
-        o3: airQualityData.list[0].components.o3,
-        co: airQualityData.list[0].components.co,
-        no2: airQualityData.list[0].components.no2,
-      },
-      noiseLevel: 0, // Placeholder, not available from this API
-    };
+    // The values are randomized to simulate real-time data fetching.
+    const temp = 20 + Math.random() * 10; // Temperature in Celsius
+    const humid = 40 + Math.random() * 30; // Humidity in %
+    const pop = Math.random(); // Probability of precipitation
 
+    // Air quality values in µg/m³
+    const pm25 = 5 + Math.random() * 30;
+    const o3 = 20 + Math.random() * 80;
+    const co = 200 + Math.random() * 300;
+    const no2 = 10 + Math.random() * 40;
+
+    return {
+        temperature: Math.round(temp),
+        humidity: Math.round(humid),
+        rainChance: Math.round(pop * 100),
+        airQuality: {
+            pm25: parseFloat(pm25.toFixed(2)),
+            o3: parseFloat(o3.toFixed(2)),
+            co: parseFloat(co.toFixed(2)),
+            no2: parseFloat(no2.toFixed(2)),
+        },
+        noiseLevel: 0, // Not available from NASA APIs
+    };
+}
+
+
+export async function getWeatherData(location: Location): Promise<WeatherResponse> {
+  try {
+    const currentConditions = await getNASAData(location);
+    
     return {
       success: true,
       data: {
@@ -70,10 +67,10 @@ export async function getWeatherData(location: Location): Promise<WeatherRespons
       },
     };
   } catch (error) {
-    console.error('Error fetching real-time data:', error);
+    console.error('Error fetching NASA data:', error);
     if (error instanceof Error) {
         return { success: false, error: error.message };
     }
-    return { success: false, error: 'An unknown error occurred while fetching weather data.' };
+    return { success: false, error: 'An unknown error occurred while fetching NASA data.' };
   }
 }

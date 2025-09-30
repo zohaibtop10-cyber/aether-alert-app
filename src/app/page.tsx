@@ -12,7 +12,7 @@ import {
   getMockForecast,
   getMockHistoricalData,
 } from '@/lib/placeholder-data';
-import { Thermometer, Droplets, CloudRain, VolumeX } from 'lucide-react';
+import { Thermometer, Droplets, CloudRain } from 'lucide-react';
 import type { CurrentConditions, Forecast, HistoricalDataPoint } from '@/lib/types';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -103,10 +103,9 @@ export default function Home() {
         )}
 
 
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
           {isLoading || !currentConditions ? (
             <>
-              <Skeleton className="h-[125px] w-full" />
               <Skeleton className="h-[125px] w-full" />
               <Skeleton className="h-[125px] w-full" />
               <Skeleton className="h-[125px] w-full" />
@@ -134,19 +133,6 @@ export default function Home() {
                 icon={<CloudRain className="size-6 text-muted-foreground" />}
                 description="Probability of precipitation"
               />
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">
-                    Noise Pollution
-                  </CardTitle>
-                  <VolumeX className="size-6 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <p className="text-xs text-muted-foreground">
-                    No NASA data available. This is a placeholder.
-                  </p>
-                </CardContent>
-              </Card>
             </>
           )}
         </div>
