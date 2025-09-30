@@ -2,9 +2,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Wind } from 'lucide-react';
 import type { AirQuality } from '@/lib/types';
+import { Skeleton } from '../ui/skeleton';
 
 interface AirQualityCardProps {
-  airQuality: AirQuality;
+  airQuality?: AirQuality;
   summary: { label: string; color: string };
 }
 
@@ -32,6 +33,7 @@ export function AirQualityCard({ airQuality, summary }: AirQualityCardProps) {
             <span className="font-semibold">Overall</span>
             <Badge variant={getBadgeVariant(summary.label)} className={summary.label === "Good" ? "bg-green-500/20 text-green-700 border-green-500/30 dark:bg-green-500/10 dark:text-green-400 dark:border-green-500/20" : ""}>{summary.label}</Badge>
         </div>
+        {!airQuality ? <Skeleton className="h-24 w-full" /> :
         <div className="grid grid-cols-2 gap-4 text-sm">
           <div className="space-y-1">
             <p className="text-muted-foreground">PM2.5</p>
@@ -50,6 +52,7 @@ export function AirQualityCard({ airQuality, summary }: AirQualityCardProps) {
             <p className="font-semibold">{airQuality.no2} µg/m³</p>
           </div>
         </div>
+        }
       </CardContent>
     </Card>
   );

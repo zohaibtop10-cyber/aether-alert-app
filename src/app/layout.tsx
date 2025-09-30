@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 import { ThemeProvider } from '@/components/theme-provider';
 import { Toaster } from '@/components/ui/toaster';
+import { LocationProvider } from '@/hooks/use-location';
 
 export const metadata: Metadata = {
   title: 'Aether Alert',
@@ -25,7 +26,9 @@ export default function RootLayout({
       </head>
       <body className="font-body antialiased">
         <ThemeProvider>
-          {children}
+          <LocationProvider>
+            {children}
+          </LocationProvider>
           <Toaster />
         </ThemeProvider>
       </body>
