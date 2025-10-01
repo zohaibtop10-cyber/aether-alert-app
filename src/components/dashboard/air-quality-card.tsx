@@ -1,3 +1,5 @@
+'use client';
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Wind } from 'lucide-react';
@@ -31,7 +33,12 @@ export function AirQualityCard({ airQuality, summary }: AirQualityCardProps) {
       <CardContent className="space-y-4">
         <div className="flex items-center justify-between rounded-lg border bg-card p-4">
             <span className="font-semibold">Overall</span>
-            <Badge variant={getBadgeVariant(summary.label)} className={summary.label === "Good" ? "bg-green-500/20 text-green-700 border-green-500/30 dark:bg-green-500/10 dark:text-green-400 dark:border-green-500/20" : ""}>{summary.label}</Badge>
+            <Badge 
+              variant={getBadgeVariant(summary.label)} 
+              className={summary.label === "Good" ? "bg-green-500/20 text-green-700 border-green-500/30 dark:bg-green-500/10 dark:text-green-400 dark:border-green-500/20 hover:bg-green-500/30" : ""}
+            >
+              {summary.label}
+            </Badge>
         </div>
         {!airQuality ? <Skeleton className="h-24 w-full" /> :
         <div className="grid grid-cols-2 gap-4 text-sm">
