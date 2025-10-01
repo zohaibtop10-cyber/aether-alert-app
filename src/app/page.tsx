@@ -12,7 +12,7 @@ import {
   getMockForecast,
   getMockHistoricalData,
 } from '@/lib/placeholder-data';
-import { Thermometer, Droplets, CloudRain } from 'lucide-react';
+import { Thermometer, Droplets, CloudRain, Wind, Gauge } from 'lucide-react';
 import type { CurrentConditions, Forecast, HistoricalDataPoint } from '@/lib/types';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -103,9 +103,11 @@ export default function Home() {
         )}
 
 
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-5">
           {isLoading || !currentConditions ? (
             <>
+              <Skeleton className="h-[125px] w-full" />
+              <Skeleton className="h-[125px] w-full" />
               <Skeleton className="h-[125px] w-full" />
               <Skeleton className="h-[125px] w-full" />
               <Skeleton className="h-[125px] w-full" />
@@ -132,6 +134,20 @@ export default function Home() {
                 unit="%"
                 icon={<CloudRain className="size-6 text-muted-foreground" />}
                 description="Probability of precipitation"
+              />
+              <InfoCard
+                title="Wind Speed"
+                value={currentConditions.windSpeed}
+                unit=" m/s"
+                icon={<Wind className="size-6 text-muted-foreground" />}
+                description="Wind speed at 2 meters"
+              />
+              <InfoCard
+                title="Pressure"
+                value={currentConditions.pressure}
+                unit=" kPa"
+                icon={<Gauge className="size-6 text-muted-foreground" />}
+                description="Surface pressure"
               />
             </>
           )}

@@ -34,6 +34,7 @@ export function HealthAlertCard({ currentConditions }: HealthAlertCardProps) {
 
   const fetchAlert = (disease: string) => {
     startTransition(async () => {
+      if (!currentConditions.airQuality) return;
       const input = {
         disease,
         temperature: currentConditions.temperature,
@@ -60,7 +61,7 @@ export function HealthAlertCard({ currentConditions }: HealthAlertCardProps) {
     form.setValue('disease', savedDisease);
     fetchAlert(savedDisease);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [currentConditions]);
 
   function onSubmit(values: z.infer<typeof formSchema>) {
     localStorage.setItem('user-disease', values.disease);

@@ -32,6 +32,8 @@ async function getNASAData(location: Location): Promise<CurrentConditions> {
             temperature: Math.round(15 + Math.random() * 10),
             humidity: Math.round(40 + Math.random() * 30),
             rainChance: Math.round(Math.random() * 50),
+            windSpeed: parseFloat((Math.random() * 15).toFixed(2)),
+            pressure: parseFloat((1000 + Math.random() * 20).toFixed(2)),
             airQuality: {
                 pm25: parseFloat((5 + Math.random() * 30).toFixed(2)),
                 o3: parseFloat((20 + Math.random() * 80).toFixed(2)),
@@ -43,7 +45,7 @@ async function getNASAData(location: Location): Promise<CurrentConditions> {
     
     // API docs: https://power.larc.nasa.gov/docs/api/
     // We are using the near real-time data endpoint.
-    const parameters = "T2M,RH2M,PRECTOTCORR";
+    const parameters = "T2M,RH2M,PRECTOTCORR,WS2M,PS";
     const powerApiUrl = `https://power.larc.nasa.gov/api/point?parameters=${parameters}&community=RE&longitude=${lon}&latitude=${lat}&format=JSON&key=${apiKey}`;
 
     const powerResponse = await fetch(powerApiUrl);
@@ -60,13 +62,15 @@ async function getNASAData(location: Location): Promise<CurrentConditions> {
     const temperature = powerData.properties.parameter.T2M;
     const humidity = powerData.properties.parameter.RH2M;
     const precipitation = powerData.properties.parameter.PRECTOTCORR; // in mm/day
+    const windSpeed = powerData.properties.parameter.WS2M;
+    const pressure = powerData.properties.parameter.PS;
 
-    if (temperature === -999 || humidity === -999) {
+    if (temperature === -999 || humidity === -999 || windSpeed === -999 || pressure === -999) {
         throw new Error("Meteorological data from NASA POWER is currently unavailable for this location.");
     }
 
     // A simple way to estimate rain chance from daily precipitation amount. This is a heuristic.
-    // NASA POWER provides total precipitation, not probability.
+    // NASA POWER provides total precipitation, not probability. This data is informed by GPM IMERG.
     const rainChance = precipitation > 0 ? Math.min(100, Math.ceil(precipitation * 10)) : 0;
     
     // Air Quality data is not available from the POWER API's point-in-time endpoint.
@@ -81,6 +85,8 @@ async function getNASAData(location: Location): Promise<CurrentConditions> {
         temperature: Math.round(temperature),
         humidity: Math.round(humidity),
         rainChance: rainChance,
+        windSpeed: parseFloat(windSpeed.toFixed(2)),
+        pressure: parseFloat(pressure.toFixed(2)),
         airQuality: {
             pm25: parseFloat(pm25.toFixed(2)),
             o3: parseFloat(o3.toFixed(2)),

@@ -16,6 +16,8 @@ export interface CurrentConditions {
   temperature: number;
   humidity: number;
   rainChance: number;
+  windSpeed: number;
+  pressure: number;
   airQuality: AirQuality;
 }
 
