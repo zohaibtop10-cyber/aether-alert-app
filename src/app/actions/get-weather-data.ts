@@ -38,7 +38,6 @@ async function getNASAData(location: Location): Promise<CurrentConditions> {
                 co: parseFloat((200 + Math.random() * 300).toFixed(2)),
                 no2: parseFloat((10 + Math.random() * 40).toFixed(2)),
             },
-            noiseLevel: 0,
         };
     }
     
@@ -72,7 +71,7 @@ async function getNASAData(location: Location): Promise<CurrentConditions> {
     
     // Air Quality data is not available from the POWER API's point-in-time endpoint.
     // For a production app, this would involve a different NASA dataset (e.g., GEOS-CF) and more complex data processing.
-    // We will simulate it for now.
+    // We will simulate it for now as a placeholder.
     const pm25 = 5 + Math.random() * 30;
     const o3 = 20 + Math.random() * 80;
     const co = 200 + Math.random() * 300;
@@ -88,7 +87,6 @@ async function getNASAData(location: Location): Promise<CurrentConditions> {
             co: parseFloat(co.toFixed(2)),
             no2: parseFloat(no2.toFixed(2)),
         },
-        noiseLevel: 0,
     };
 }
 

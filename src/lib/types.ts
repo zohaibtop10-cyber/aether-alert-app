@@ -17,7 +17,6 @@ export interface CurrentConditions {
   humidity: number;
   rainChance: number;
   airQuality: AirQuality;
-  noiseLevel: number;
 }
 
 export interface Forecast {
