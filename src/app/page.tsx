@@ -14,7 +14,7 @@ import {
 } from '@/lib/placeholder-data';
 import { Thermometer, Droplets, CloudRain, Wind, Gauge } from 'lucide-react';
 import type { CurrentConditions, Forecast, HistoricalDataPoint } from '@/lib/types';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Card, CardHeader, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useLocation } from '@/hooks/use-location';
 
@@ -78,7 +78,7 @@ export default function Home() {
         {error && (
           <Card className="bg-destructive text-destructive-foreground">
             <CardHeader>
-              <CardTitle>Location Error</CardTitle>
+              <div className="text-lg font-semibold">Location Error</div>
             </CardHeader>
             <CardContent>
               <p>{error}</p>
@@ -88,7 +88,7 @@ export default function Home() {
         {apiError && (
           <Card className="bg-destructive text-destructive-foreground">
             <CardHeader>
-              <CardTitle>Data Fetching Error</CardTitle>
+              <div className="text-lg font-semibold">Data Fetching Error</div>
             </CardHeader>
             <CardContent>
               <p>{apiError}</p>
