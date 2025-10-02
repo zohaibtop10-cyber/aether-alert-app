@@ -15,13 +15,13 @@ const GenerateHealthAlertInputSchema = z.object({
   disease: z
     .string()
     .describe('The user-specified disease or health condition.'),
-  temperature: z.number().describe('The current temperature.'),
-  humidity: z.number().describe('The current humidity level.'),
+  temperature: z.number().describe('The current temperature in Celsius.'),
+  humidity: z.number().describe('The current relative humidity percentage.'),
   airQualityPM25: z.number().describe('The current PM2.5 air quality index.'),
-  airQualityO3: z.number().describe('The current Ozone air quality index.'),
-  airQualityCO: z.number().describe('The current Carbon Monoxide air quality index.'),
-  airQualityNO2: z.number().describe('The current Nitrogen Dioxide air quality index.'),
-  rainChance: z.number().describe('The chance of rain (0-100).'),
+  airQualityO3: z.number().describe('The current Ozone (O3) air quality index.'),
+  airQualityCO: z.number().describe('The current Carbon Monoxide (CO) air quality index.'),
+  airQualityNO2: z.number().describe('The current Nitrogen Dioxide (NO2) air quality index.'),
+  rainChance: z.number().describe('The chance of rain as a percentage (0-100).'),
 });
 export type GenerateHealthAlertInput = z.infer<typeof GenerateHealthAlertInputSchema>;
 
@@ -40,21 +40,21 @@ const prompt = ai.definePrompt({
   name: 'generateHealthAlertPrompt',
   input: {schema: GenerateHealthAlertInputSchema},
   output: {schema: GenerateHealthAlertOutputSchema},
-  prompt: `You are a health expert. A user with the condition '{{disease}}' is asking for a personalized health alert based on the current environmental conditions.
+  prompt: `You are a helpful assistant who provides clear, friendly, and concise health advice.
+A user with the condition '{{disease}}' is seeing the following environmental conditions:
+- Temperature: {{temperature}}°C
+- Humidity: {{humidity}}%
+- PM2.5: {{airQualityPM25}}
+- O3: {{airQualityO3}}
+- CO: {{airQualityCO}}
+- NO2: {{airQualityNO2}}
+- Rain Chance: {{rainChance}}%
 
-  Here is the current environmental data:
-  - Temperature: {{temperature}} degrees Celsius
-  - Humidity: {{humidity}}%
-  - Air Quality (PM2.5): {{airQualityPM25}}
-  - Air Quality (O3): {{airQualityO3}}
-  - Air Quality (CO): {{airQualityCO}}
-  - Air Quality (NO2): {{airQualityNO2}}
-  - Chance of Rain: {{rainChance}}%
+Generate a short, easy-to-understand health alert (1-2 sentences). Be reassuring and focus on simple, actionable advice.
 
-  Generate a concise and informative health alert for the user.  The alert should be no more than two sentences.
-
-  If the user has not specified a disease, provide a general alert based on the environmental conditions (e.g., "Air quality is poor today. Consider staying indoors.").
-`,
+If no specific disease is mentioned, provide a general, helpful tip about the current conditions.
+Example for "Asthma": "Air quality is a bit poor today. It might be a good idea to keep your inhaler handy if you're heading outside."
+Example for no disease: "It's a clear and pleasant day. A great opportunity to enjoy some time outdoors!"`,
 });
 
 const generateHealthAlertFlow = ai.defineFlow(

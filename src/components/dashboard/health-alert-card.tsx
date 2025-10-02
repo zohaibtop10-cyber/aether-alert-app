@@ -41,11 +41,15 @@ export function HealthAlertCard({ currentConditions }: HealthAlertCardProps) {
   };
 
   useEffect(() => {
-    if (location?.disease || location?.disease === '') {
+    // We check for location having been loaded, and that currentConditions are available.
+    // The disease property can be an empty string, so we check for its existence.
+    if (location && typeof location.disease !== 'undefined' && currentConditions) {
         fetchAlert(location.disease);
     }
+  // We want this effect to re-run whenever the user's location (and thus their specified disease) changes,
+  // or when new weather data comes in.
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentConditions, location?.disease]);
+  }, [currentConditions, location]);
 
   return (
     <Card className="w-full">
