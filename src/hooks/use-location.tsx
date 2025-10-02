@@ -2,6 +2,7 @@
 
 import { Location } from "@/lib/types";
 import { createContext, useContext, useState, ReactNode, useCallback } from "react";
+import { getLocationDetails } from "@/app/actions/get-location-details";
 
 interface LocationContextType {
   location: Location | null;
@@ -17,13 +18,14 @@ const LocationContext = createContext<LocationContextType | undefined>(
 
 export function LocationProvider({ children }: { children: ReactNode }) {
   const [location, setLocation] = useState<Location | null>(null);
-  const [isLocating, setIsLocating] = useState<boolean>(false);
+  const [isLocating, setIsLocating] = useState<boolean>(true); // Start with true
   const [isLocationEnabled, setIsLocationEnabled] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
   const requestLocation = useCallback(() => {
     if (!navigator.geolocation) {
       setError("Geolocation is not supported by your browser.");
+      setIsLocating(false);
       return;
     }
 
@@ -31,9 +33,13 @@ export function LocationProvider({ children }: { children: ReactNode }) {
     setError(null);
 
     navigator.geolocation.getCurrentPosition(
-      (position) => {
+      async (position) => {
         const { latitude, longitude } = position.coords;
-        setLocation({ lat: latitude, lon: longitude });
+        
+        // Fetch location details (city, country)
+        const details = await getLocationDetails({ lat: latitude, lon: longitude });
+
+        setLocation({ lat: latitude, lon: longitude, ...details });
         setIsLocationEnabled(true);
         setIsLocating(false);
       },
@@ -54,7 +60,8 @@ export function LocationProvider({ children }: { children: ReactNode }) {
         }
         setIsLocationEnabled(false);
         setIsLocating(false);
-      }
+      },
+      { timeout: 10000 }
     );
   }, []);
 
