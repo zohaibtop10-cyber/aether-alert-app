@@ -1,5 +1,8 @@
 'use server';
 
+import { config } from 'dotenv';
+config();
+
 import type { Location, CurrentConditions } from '@/lib/types';
 import fetch from 'node-fetch';
 
