@@ -1,11 +1,11 @@
 'use client';
 
-import { AirVent, Search, LocateIcon, MapPin } from 'lucide-react';
-import { Input } from '@/components/ui/input';
+import { AirVent, LocateIcon, MapPin, User } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { Button } from '../ui/button';
 import { useLocation } from '@/hooks/use-location';
 import { Skeleton } from '../ui/skeleton';
+import { ProfileDialog } from './profile-dialog';
 
 export default function Header() {
   const { isLocating, requestLocation, location, isLocationEnabled } =
@@ -27,14 +27,6 @@ export default function Header() {
             </div>
           ) : null}
 
-        <div className="relative flex-none items-center gap-2 md:grow-0">
-          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input
-            type="search"
-            placeholder="Search location..."
-            className="w-full rounded-lg bg-secondary pl-8 md:w-[200px] lg:w-[320px]"
-          />
-        </div>
          <Button
           variant="outline"
           size="icon"
@@ -44,6 +36,7 @@ export default function Header() {
         >
           <LocateIcon className="h-4 w-4" />
         </Button>
+        <ProfileDialog />
         <ThemeToggle />
       </div>
 

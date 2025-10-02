@@ -1,21 +1,12 @@
 'use client';
 
 import { useState, useTransition, useEffect } from 'react';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { useForm } from 'react-hook-form';
-import { z } from 'zod';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Form, FormControl, FormField, FormItem, FormMessage } from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
 import { generateHealthAlert } from '@/ai/flows/generate-health-alert';
 import type { CurrentConditions } from '@/lib/types';
 import { AlertCircle, Zap, Info } from 'lucide-react';
 import { Skeleton } from '../ui/skeleton';
-
-const formSchema = z.object({
-  disease: z.string().max(50, 'Please enter a valid condition.'),
-});
+import { useLocation } from '@/hooks/use-location';
 
 interface HealthAlertCardProps {
   currentConditions: CurrentConditions;
@@ -24,13 +15,7 @@ interface HealthAlertCardProps {
 export function HealthAlertCard({ currentConditions }: HealthAlertCardProps) {
   const [alert, setAlert] = useState<{ message: string; isPersonalized: boolean } | null>(null);
   const [isPending, startTransition] = useTransition();
-
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      disease: '',
-    },
-  });
+  const { location } = useLocation();
 
   const fetchAlert = (disease: string) => {
     startTransition(async () => {
@@ -55,18 +40,12 @@ export function HealthAlertCard({ currentConditions }: HealthAlertCardProps) {
     });
   };
 
-  // Fetch a general alert on initial load
   useEffect(() => {
-    const savedDisease = localStorage.getItem('user-disease') || '';
-    form.setValue('disease', savedDisease);
-    fetchAlert(savedDisease);
+    if (location?.disease || location?.disease === '') {
+        fetchAlert(location.disease);
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentConditions]);
-
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    localStorage.setItem('user-disease', values.disease);
-    fetchAlert(values.disease);
-  }
+  }, [currentConditions, location?.disease]);
 
   return (
     <Card className="w-full">
@@ -82,8 +61,7 @@ export function HealthAlertCard({ currentConditions }: HealthAlertCardProps) {
         </div>
       </CardHeader>
       <CardContent>
-        <div className="grid gap-6 md:grid-cols-2">
-          <div className="flex items-center rounded-lg border p-4">
+        <div className="rounded-lg border p-4 min-h-[72px] flex items-center">
             {isPending ? (
               <div className="space-y-2 w-full">
                 <Skeleton className="h-5 w-3/4" />
@@ -100,26 +78,6 @@ export function HealthAlertCard({ currentConditions }: HealthAlertCardProps) {
               </div>
             ) : null}
           </div>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="flex items-start gap-2">
-              <FormField
-                control={form.control}
-                name="disease"
-                render={({ field }) => (
-                  <FormItem className="flex-grow">
-                    <FormControl>
-                      <Input placeholder="Enter a condition (e.g., Asthma)" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <Button type="submit" disabled={isPending}>
-                {isPending ? 'Updating...' : 'Update'}
-              </Button>
-            </form>
-          </Form>
-        </div>
       </CardContent>
     </Card>
   );

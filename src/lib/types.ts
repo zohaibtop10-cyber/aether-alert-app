@@ -3,6 +3,7 @@ export interface Location {
   lon: number;
   city?: string;
   country?: string;
+  disease?: string;
 }
 
 export interface AirQuality {
