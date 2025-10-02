@@ -58,11 +58,6 @@ export default function Home() {
             const result = await getWeatherData({ lat: location.lat, lon: location.lon });
             if (result.success) {
               setCurrentConditions(result.data.current);
-              // For now, we'll continue to use mock data for forecast and historical.
-              setDailyForecast(getMockForecast('daily'));
-              setHourlyForecast(getMockForecast('hourly'));
-              setHistoricalData7d(getMockHistoricalData(7));
-              setHistoricalData30d(getMockHistoricalData(30));
             } else {
               setApiError(result.error);
             }
@@ -72,6 +67,16 @@ export default function Home() {
       });
     }
   }, [location]);
+
+  useEffect(() => {
+    // For now, we'll continue to use mock data for forecast and historical.
+    // This needs to be in useEffect to avoid hydration errors since it uses Math.random()
+    setDailyForecast(getMockForecast('daily'));
+    setHourlyForecast(getMockForecast('hourly'));
+    setHistoricalData7d(getMockHistoricalData(7));
+    setHistoricalData30d(getMockHistoricalData(30));
+  }, []);
+
 
   const airQualitySummary = getAirQualitySummary(currentConditions?.airQuality);
 
