@@ -25,22 +25,7 @@ async function getNASAData(location: Location): Promise<CurrentConditions> {
     const apiKey = process.env.NASA_API_KEY;
 
     if (!apiKey) {
-        // As a fallback for developers who may not have a NASA API key, 
-        // we'll return some plausible-looking mock data.
-        console.warn("NASA API key is not configured. Returning mock data. Please add NASA_API_KEY to your .env file.");
-        return {
-            temperature: Math.round(15 + Math.random() * 10),
-            humidity: Math.round(40 + Math.random() * 30),
-            rainChance: Math.round(Math.random() * 50),
-            windSpeed: parseFloat((Math.random() * 15).toFixed(2)),
-            pressure: parseFloat((1000 + Math.random() * 20).toFixed(2)),
-            airQuality: {
-                pm25: parseFloat((5 + Math.random() * 30).toFixed(2)),
-                o3: parseFloat((20 + Math.random() * 80).toFixed(2)),
-                co: parseFloat((200 + Math.random() * 300).toFixed(2)),
-                no2: parseFloat((10 + Math.random() * 40).toFixed(2)),
-            },
-        };
+      throw new Error("NASA API key is not configured. Please add NASA_API_KEY to your .env file to fetch live data.");
     }
     
     // API docs: https://power.larc.nasa.gov/docs/api/
