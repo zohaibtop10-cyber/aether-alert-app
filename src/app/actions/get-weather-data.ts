@@ -74,8 +74,8 @@ async function getNASAData(location: Location): Promise<CurrentConditions> {
         maxTemperature: Math.round(maxTemperature),
         humidity: Math.round(humidity),
         rainChance: rainChance,
-        windSpeed: windSpeed,
-        pressure: pressure,
+        windSpeed: parseFloat(windSpeed.toFixed(2)),
+        pressure: parseFloat(pressure.toFixed(2)),
         airQuality: {
             pm25: parseFloat(pm25.toFixed(2)),
             o3: parseFloat(o3.toFixed(2)),
