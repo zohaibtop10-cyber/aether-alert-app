@@ -30,7 +30,7 @@ async function getNASAData(location: Location): Promise<CurrentConditions> {
     
     // API docs: https://power.larc.nasa.gov/docs/api/
     // We are using the near real-time data endpoint.
-    const parameters = "T2M,RH2M,PRECTOTCORR,WS2M,PS";
+    const parameters = "T2M,T2M_MIN,T2M_MAX,RH2M,PRECTOTCORR,WS2M,PS";
     const powerApiUrl = `https://power.larc.nasa.gov/api/point?parameters=${parameters}&community=RE&longitude=${lon}&latitude=${lat}&format=JSON&key=${apiKey}`;
 
     const powerResponse = await fetch(powerApiUrl);
@@ -45,12 +45,14 @@ async function getNASAData(location: Location): Promise<CurrentConditions> {
     
     // Extract values, POWER API returns -999 for missing data
     const temperature = powerData.properties.parameter.T2M;
+    const minTemperature = powerData.properties.parameter.T2M_MIN;
+    const maxTemperature = powerData.properties.parameter.T2M_MAX;
     const humidity = powerData.properties.parameter.RH2M;
     const precipitation = powerData.properties.parameter.PRECTOTCORR; // in mm/day
     const windSpeed = powerData.properties.parameter.WS2M;
     const pressure = powerData.properties.parameter.PS;
 
-    if (temperature === -999 || humidity === -999 || windSpeed === -999 || pressure === -999) {
+    if (temperature === -999 || humidity === -999 || minTemperature === -999 || maxTemperature === -999) {
         throw new Error("Meteorological data from NASA POWER is currently unavailable for this location.");
     }
 
@@ -68,10 +70,12 @@ async function getNASAData(location: Location): Promise<CurrentConditions> {
 
     return {
         temperature: Math.round(temperature),
+        minTemperature: Math.round(minTemperature),
+        maxTemperature: Math.round(maxTemperature),
         humidity: Math.round(humidity),
         rainChance: rainChance,
-        windSpeed: parseFloat(windSpeed.toFixed(2)),
-        pressure: parseFloat(pressure.toFixed(2)),
+        windSpeed: windSpeed,
+        pressure: pressure,
         airQuality: {
             pm25: parseFloat(pm25.toFixed(2)),
             o3: parseFloat(o3.toFixed(2)),

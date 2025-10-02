@@ -12,7 +12,7 @@ import {
   getMockForecast,
   getMockHistoricalData,
 } from '@/lib/placeholder-data';
-import { Thermometer, Droplets, CloudRain, Wind, Gauge } from 'lucide-react';
+import { Thermometer, Droplets, CloudRain, ThermometerSun, ThermometerSnowflake } from 'lucide-react';
 import type { CurrentConditions, Forecast, HistoricalDataPoint } from '@/lib/types';
 import { Card, CardHeader, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -45,27 +45,33 @@ export default function Home() {
   const [dailyForecast, setDailyForecast] = useState<Forecast[]>([]);
   const [hourlyForecast, setHourlyForecast] = useState<Forecast[]>([]);
   const [apiError, setApiError] = useState<string | null>(null);
+  
+  const [historicalData7d, setHistoricalData7d] = useState<HistoricalDataPoint[]>([]);
+  const [historicalData30d, setHistoricalData30d] = useState<HistoricalDataPoint[]>([]);
 
   useEffect(() => {
     // When location is available, fetch the weather data
     if (location) {
       startTransition(async () => {
         setApiError(null);
-        const result = await getWeatherData({ lat: location.lat, lon: location.lon });
-        if (result.success) {
-          setCurrentConditions(result.data.current);
-          // For now, we'll continue to use mock data for forecast and historical.
-          setDailyForecast(getMockForecast('daily'));
-          setHourlyForecast(getMockForecast('hourly'));
-        } else {
-          setApiError(result.error);
+        try {
+            const result = await getWeatherData({ lat: location.lat, lon: location.lon });
+            if (result.success) {
+              setCurrentConditions(result.data.current);
+              // For now, we'll continue to use mock data for forecast and historical.
+              setDailyForecast(getMockForecast('daily'));
+              setHourlyForecast(getMockForecast('hourly'));
+              setHistoricalData7d(getMockHistoricalData(7));
+              setHistoricalData30d(getMockHistoricalData(30));
+            } else {
+              setApiError(result.error);
+            }
+        } catch (e: any) {
+            setApiError(e.message || "An unexpected error occurred.");
         }
       });
     }
   }, [location]);
-
-  const historicalData7d = getMockHistoricalData(7);
-  const historicalData30d = getMockHistoricalData(30);
 
   const airQualitySummary = getAirQualitySummary(currentConditions?.airQuality);
 
@@ -135,19 +141,19 @@ export default function Home() {
                 icon={<CloudRain className="size-6 text-muted-foreground" />}
                 description="Probability of precipitation"
               />
-              <InfoCard
-                title="Wind Speed"
-                value={currentConditions.windSpeed}
-                unit=" m/s"
-                icon={<Wind className="size-6 text-muted-foreground" />}
-                description="Wind speed at 2 meters"
+               <InfoCard
+                title="Max Temp"
+                value={currentConditions.maxTemperature}
+                unit="°C"
+                icon={<ThermometerSun className="size-6 text-muted-foreground" />}
+                description="Today's maximum temperature"
               />
               <InfoCard
-                title="Pressure"
-                value={currentConditions.pressure}
-                unit=" kPa"
-                icon={<Gauge className="size-6 text-muted-foreground" />}
-                description="Surface pressure"
+                title="Min Temp"
+                value={currentConditions.minTemperature}
+                unit="°C"
+                icon={<ThermometerSnowflake className="size-6 text-muted-foreground" />}
+                description="Today's minimum temperature"
               />
             </>
           )}
