@@ -43,14 +43,14 @@ async function getOpenMeteoData(location: Location): Promise<CurrentConditions> 
     // Daily forecast params
     const dailyParams = ["temperature_2m_max", "temperature_2m_min", "precipitation_probability_max"].join(",");
     
-    // Hourly forecast params
-    const hourlyParams = ["temperature_2m", "precipitation_probability", "pm2_5"].join(",");
+    // Hourly forecast params - removed pm2_5 as it's not available in this endpoint
+    const hourlyParams = ["temperature_2m", "precipitation_probability"].join(",");
 
     const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=${weatherParams}&daily=${dailyParams}&hourly=${hourlyParams}&timezone=auto&forecast_days=7`;
 
     // Air Quality API URL, adding 'pm10'
     const airQualityParams = ["pm10", "pm2_5", "ozone", "carbon_monoxide", "nitrogen_dioxide"].join(",");
-    const airQualityUrl = `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${lat}&longitude=${lon}&current=${airQualityParams}&timezone=auto`;
+    const airQualityUrl = `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${lat}&longitude=${lon}&current=${airQualityParams}&hourly=pm2_5&timezone=auto&forecast_days=1`;
 
     try {
         const [weatherResponse, airQualityResponse] = await Promise.all([
@@ -70,10 +70,11 @@ async function getOpenMeteoData(location: Location): Promise<CurrentConditions> 
 
         const current = weatherData.current;
         const daily = weatherData.daily;
-        const hourly = weatherData.hourly;
+        const hourlyWeather = weatherData.hourly;
         const aqCurrent = airQualityData.current;
+        const aqHourly = airQualityData.hourly;
 
-        if (!current || !daily || !hourly || !aqCurrent) {
+        if (!current || !daily || !hourlyWeather || !aqCurrent || !aqHourly) {
             throw new Error("Incomplete data received from Open-Meteo APIs.");
         }
 
@@ -87,15 +88,17 @@ async function getOpenMeteoData(location: Location): Promise<CurrentConditions> 
 
         // Process hourly forecast
         const now = new Date();
-        const currentHourIndex = hourly.time.findIndex((t: string) => new Date(t) >= now);
+        const currentHourIndex = hourlyWeather.time.findIndex((t: string) => new Date(t) >= now);
         
-        const hourlyForecast: Forecast[] = hourly.time.slice(currentHourIndex, currentHourIndex + 24).map((time: string, index: number) => {
+        const hourlyForecast: Forecast[] = hourlyWeather.time.slice(currentHourIndex, currentHourIndex + 24).map((time: string, index: number) => {
             const actualIndex = currentHourIndex + index;
+            // Ensure we don't go out of bounds for air quality data
+            const pm25Value = aqHourly.pm2_5[actualIndex] ?? 0;
             return {
                 time: new Date(time).toLocaleTimeString('en-US', { hour: 'numeric', hour12: true }),
-                temperature: Math.round(hourly.temperature_2m[actualIndex]),
-                rainChance: hourly.precipitation_probability[actualIndex],
-                airQualityStatus: getAirQualityStatus(hourly.pm2_5[actualIndex])
+                temperature: Math.round(hourlyWeather.temperature_2m[actualIndex]),
+                rainChance: hourlyWeather.precipitation_probability[actualIndex],
+                airQualityStatus: getAirQualityStatus(pm25Value)
             };
         });
 
