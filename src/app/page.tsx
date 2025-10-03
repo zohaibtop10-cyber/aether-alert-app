@@ -9,7 +9,7 @@ import { ForecastTabs } from '@/components/dashboard/forecast-tabs';
 import { HistoricalChartCard } from '@/components/dashboard/historical-chart-card';
 import { getWeatherData } from './actions/get-weather-data';
 import { getHistoricalData } from './actions/get-historical-data';
-import { Thermometer, Droplets, CloudRain, ThermometerSun, ThermometerSnowflake, Wind, Gauge, Bot } from 'lucide-react';
+import { Thermometer, Droplets, CloudRain, ThermometerSun, ThermometerSnowflake, Wind, Gauge, Bot, Sparkles } from 'lucide-react';
 import type { CurrentConditions, Forecast, HistoricalDataPoint } from '@/lib/types';
 import { Card, CardHeader, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -221,7 +221,18 @@ export default function Home() {
               <Bot className="h-6 w-6" />
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="max-w-2xl p-0">
+             <DialogHeader className="p-6 pb-0">
+                <DialogTitle>
+                    <div className="flex items-center gap-3">
+                        <Sparkles className="h-6 w-6 text-primary" />
+                        <span>NASA Data Assistant</span>
+                    </div>
+                </DialogTitle>
+                <DialogDescription>
+                    Ask questions about historical environmental data for your location.
+                </DialogDescription>
+            </DialogHeader>
             <AIAssistantCard />
           </DialogContent>
         </Dialog>

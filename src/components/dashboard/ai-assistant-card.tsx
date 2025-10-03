@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import { CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Bot, User, Send, Loader2, Sparkles } from 'lucide-react';
+import { Bot, User, Send, Loader2 } from 'lucide-react';
 import { nanoid } from 'nanoid';
 import { askNasaAssistant } from '@/app/actions/ask-nasa-assistant';
 import { useLocation } from '@/hooks/use-location';
@@ -73,16 +73,7 @@ export function AIAssistantCard() {
 
   return (
     <div className="flex flex-col h-[60vh]">
-       <CardHeader>
-        <div className="flex items-center gap-3">
-          <Sparkles className="h-6 w-6 text-primary" />
-          <div>
-            <CardTitle>NASA Data Assistant</CardTitle>
-            <CardDescription>Ask questions about historical environmental data.</CardDescription>
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent className="flex-1 overflow-y-auto space-y-4 pr-6 pl-2 border-t border-b py-4">
+      <CardContent className="flex-1 overflow-y-auto space-y-4 pr-6 pl-6 border-t py-4">
         {messages.map((msg) => (
           <div key={msg.id} className={`flex items-start gap-3 ${msg.role === 'user' ? 'justify-end' : ''}`}>
             {msg.role === 'assistant' && (
@@ -118,7 +109,7 @@ export function AIAssistantCard() {
         )}
         <div ref={messagesEndRef} />
       </CardContent>
-      <CardFooter className="pt-6">
+      <CardFooter className="p-6 pt-4 border-t">
         <form onSubmit={handleSubmit} className="flex w-full items-center space-x-2">
           <Input
             value={input}
