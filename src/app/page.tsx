@@ -51,6 +51,7 @@ export default function Home() {
     if (location) {
       startTransition(async () => {
         setApiError(null);
+        setCurrentConditions(null); // Reset conditions before fetching
         try {
             const result = await getWeatherData({ lat: location.lat, lon: location.lon });
             if (result.success) {

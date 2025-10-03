@@ -43,6 +43,10 @@ export function AirQualityCard({ airQuality, summary }: AirQualityCardProps) {
         {!airQuality ? <Skeleton className="h-24 w-full" /> :
         <div className="grid grid-cols-2 gap-4 text-sm">
           <div className="space-y-1">
+            <p className="text-muted-foreground">PM10</p>
+            <p className="font-semibold">{airQuality.pm10} µg/m³</p>
+          </div>
+          <div className="space-y-1">
             <p className="text-muted-foreground">PM2.5</p>
             <p className="font-semibold">{airQuality.pm25} µg/m³</p>
           </div>

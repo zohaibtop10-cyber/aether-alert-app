@@ -7,6 +7,7 @@ export interface Location {
 }
 
 export interface AirQuality {
+  pm10: number;
   pm25: number;
   o3: number;
   co: number;

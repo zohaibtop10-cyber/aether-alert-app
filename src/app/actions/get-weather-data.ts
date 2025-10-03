@@ -20,7 +20,7 @@ type ApiResponse = WeatherResponse | ErrorResponse;
 const getAirQualityStatus = (pm25: number) => {
     if (pm25 <= 12) return 'Good';
     if (pm25 <= 35.4) return 'Moderate';
-    if (pm25 <= 55.4) return 'Unhealthy';
+    if (pm25 <= 55.4) return 'Unhealthy for Sensitive Groups';
     if (pm25 <= 150.4) return 'Unhealthy';
     if (pm25 <= 250.4) return 'Very Unhealthy';
     return 'Hazardous';
@@ -30,10 +30,11 @@ const getAirQualityStatus = (pm25: number) => {
 async function getOpenMeteoData(location: Location): Promise<CurrentConditions> {
     const { lat, lon } = location;
 
-    // Common params for weather
+    // Common params for weather, including 'precipitation'
     const weatherParams = [
         "temperature_2m",
         "relative_humidity_2m",
+        "precipitation", // Using precipitation amount as requested
         "precipitation_probability",
         "wind_speed_10m",
         "surface_pressure",
@@ -47,8 +48,8 @@ async function getOpenMeteoData(location: Location): Promise<CurrentConditions> 
 
     const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=${weatherParams}&daily=${dailyParams}&hourly=${hourlyParams}&timezone=auto&forecast_days=7`;
 
-    // Air Quality API URL
-    const airQualityParams = ["pm2_5", "ozone", "carbon_monoxide", "nitrogen_dioxide"].join(",");
+    // Air Quality API URL, adding 'pm10'
+    const airQualityParams = ["pm10", "pm2_5", "ozone", "carbon_monoxide", "nitrogen_dioxide"].join(",");
     const airQualityUrl = `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${lat}&longitude=${lon}&current=${airQualityParams}&timezone=auto`;
 
     try {
@@ -81,16 +82,15 @@ async function getOpenMeteoData(location: Location): Promise<CurrentConditions> 
             time: new Date(time).toLocaleDateString('en-US', { weekday: 'short' }),
             temperature: Math.round((daily.temperature_2m_max[index] + daily.temperature_2m_min[index]) / 2),
             rainChance: daily.precipitation_probability_max[index],
-            // Note: Open-Meteo doesn't provide daily AQI forecast easily, so we use a placeholder logic or omit it.
-            // For simplicity, we'll derive a status from temp, but this is not scientifically accurate.
-            airQualityStatus: "N/A"
+            airQualityStatus: "N/A" // Daily AQI is complex, keeping as N/A for now
         }));
 
         // Process hourly forecast
         const now = new Date();
-        const currentHour = now.getHours();
-        const hourlyForecast: Forecast[] = hourly.time.slice(currentHour, currentHour + 24).map((time: string, index: number) => {
-            const actualIndex = currentHour + index;
+        const currentHourIndex = hourly.time.findIndex((t: string) => new Date(t) >= now);
+        
+        const hourlyForecast: Forecast[] = hourly.time.slice(currentHourIndex, currentHourIndex + 24).map((time: string, index: number) => {
+            const actualIndex = currentHourIndex + index;
             return {
                 time: new Date(time).toLocaleTimeString('en-US', { hour: 'numeric', hour12: true }),
                 temperature: Math.round(hourly.temperature_2m[actualIndex]),
@@ -107,10 +107,11 @@ async function getOpenMeteoData(location: Location): Promise<CurrentConditions> 
             minTemperature: Math.round(daily.temperature_2m_min[0]),
             maxTemperature: Math.round(daily.temperature_2m_max[0]),
             humidity: Math.round(current.relative_humidity_2m),
-            rainChance: current.precipitation_probability,
+            rainChance: current.precipitation_probability, // Using probability for the main card
             windSpeed: parseFloat(current.wind_speed_10m.toFixed(2)),
             pressure: parseFloat(pressureInKpa.toFixed(2)),
             airQuality: {
+                pm10: parseFloat(aqCurrent.pm10.toFixed(2)),
                 pm25: parseFloat(aqCurrent.pm2_5.toFixed(2)),
                 o3: parseFloat(aqCurrent.ozone.toFixed(2)),
                 co: parseFloat(aqCurrent.carbon_monoxide.toFixed(2)),
