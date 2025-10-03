@@ -5,8 +5,8 @@ import { Toaster } from '@/components/ui/toaster';
 import { LocationProvider } from '@/hooks/use-location';
 
 export const metadata: Metadata = {
-  title: 'Aether Alert',
-  description: 'Realtime environmental conditions, weather predictions, and health alerts from NASA data.',
+  title: 'MyClimateGuard',
+  description: 'Realtime environmental conditions, weather predictions, and health alerts.',
 };
 
 export default function RootLayout({

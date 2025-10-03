@@ -14,7 +14,7 @@ export default function Header() {
     <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-background/80 px-4 backdrop-blur-sm md:px-6">
       <div className="flex items-center gap-2">
         <AirVent className="h-6 w-6 text-primary" />
-        <h1 className="text-lg font-semibold tracking-tight">Aether Alert</h1>
+        <h1 className="text-lg font-semibold tracking-tight">MyClimateGuard</h1>
       </div>
 
       <div className="flex flex-1 items-center justify-end gap-4">

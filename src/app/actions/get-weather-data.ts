@@ -2,15 +2,12 @@
 
 import type { Location, CurrentConditions } from '@/lib/types';
 import fetch from 'node-fetch';
-import { format, subDays } from 'date-fns';
 
-interface WeatherData {
-  current: CurrentConditions;
-}
-
-interface SuccessResponse {
+interface WeatherResponse {
   success: true;
-  data: WeatherData;
+  data: {
+    current: CurrentConditions;
+  };
 }
 
 interface ErrorResponse {
@@ -18,87 +15,83 @@ interface ErrorResponse {
   error: string;
 }
 
-type WeatherResponse = SuccessResponse | ErrorResponse;
+type ApiResponse = WeatherResponse | ErrorResponse;
 
-// Fetches data from NASA POWER API
-async function getNASAData(location: Location): Promise<CurrentConditions> {
+// Fetches data from Open-Meteo API
+async function getOpenMeteoData(location: Location): Promise<CurrentConditions> {
     const { lat, lon } = location;
-    const apiKey = process.env.NASA_API_KEY;
 
-    if (!apiKey) {
-      throw new Error("NASA API key is not configured. Please add NASA_API_KEY to your .env file to fetch live data.");
+    // Weather API URL
+    const weatherParams = [
+        "temperature_2m",
+        "relative_humidity_2m",
+        "precipitation_probability",
+        "wind_speed_10m",
+        "surface_pressure",
+    ].join(",");
+    const dailyParams = ["temperature_2m_max", "temperature_2m_min"].join(",");
+    const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=${weatherParams}&daily=${dailyParams}&timezone=auto&forecast_days=1`;
+
+    // Air Quality API URL
+    const airQualityParams = ["pm2_5", "ozone", "carbon_monoxide", "nitrogen_dioxide"].join(",");
+    const airQualityUrl = `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${lat}&longitude=${lon}&current=${airQualityParams}&timezone=auto`;
+
+    try {
+        const [weatherResponse, airQualityResponse] = await Promise.all([
+            fetch(weatherUrl),
+            fetch(airQualityUrl)
+        ]);
+
+        if (!weatherResponse.ok) {
+            throw new Error(`Failed to fetch weather data from Open-Meteo. Status: ${weatherResponse.status}`);
+        }
+        if (!airQualityResponse.ok) {
+            throw new Error(`Failed to fetch air quality data from Open-Meteo. Status: ${airQualityResponse.status}`);
+        }
+
+        const weatherData = await weatherResponse.json();
+        const airQualityData = await airQualityResponse.json();
+
+        const current = weatherData.current;
+        const daily = weatherData.daily;
+        const aqCurrent = airQualityData.current;
+
+        if (!current || !daily || !aqCurrent) {
+            throw new Error("Incomplete data received from Open-Meteo APIs.");
+        }
+
+        // Pressure is in hPa, convert to kPa for consistency
+        const pressureInKpa = current.surface_pressure / 10;
+
+        return {
+            temperature: Math.round(current.temperature_2m),
+            minTemperature: Math.round(daily.temperature_2m_min[0]),
+            maxTemperature: Math.round(daily.temperature_2m_max[0]),
+            humidity: Math.round(current.relative_humidity_2m),
+            rainChance: current.precipitation_probability,
+            windSpeed: parseFloat(current.wind_speed_10m.toFixed(2)),
+            pressure: parseFloat(pressureInKpa.toFixed(2)),
+            airQuality: {
+                pm25: parseFloat(aqCurrent.pm2_5.toFixed(2)),
+                o3: parseFloat(aqCurrent.ozone.toFixed(2)),
+                co: parseFloat(aqCurrent.carbon_monoxide.toFixed(2)),
+                no2: parseFloat(aqCurrent.nitrogen_dioxide.toFixed(2)),
+            },
+        };
+
+    } catch (error) {
+        console.error("Open-Meteo API Error:", error);
+        if (error instanceof Error) {
+            throw new Error(error.message);
+        }
+        throw new Error("An unknown error occurred while fetching data from Open-Meteo.");
     }
-    
-    // API docs: https://power.larc.nasa.gov/docs/api/
-    // We are using the near real-time data endpoint, which requires a date range. We'll ask for yesterday's data.
-    const endDate = format(subDays(new Date(), 1), 'yyyyMMdd');
-    const startDate = format(subDays(new Date(), 2), 'yyyyMMdd');
-
-    const parameters = "T2M,T2M_MIN,T2M_MAX,RH2M,PRECTOTCORR,WS2M,PS";
-    const powerApiUrl = `https://power.larc.nasa.gov/api/temporal/daily/point?parameters=${parameters}&community=RE&longitude=${lon}&latitude=${lat}&start=${startDate}&end=${endDate}&format=JSON`;
-
-    const powerResponse = await fetch(powerApiUrl);
-
-    if (!powerResponse.ok) {
-        const errorText = await powerResponse.text();
-        console.error('NASA POWER API Error:', errorText);
-        throw new Error(`Failed to fetch meteorological data from NASA POWER. Status: ${powerResponse.status}`);
-    }
-
-    const powerData = await powerResponse.json();
-    
-    // Extract the most recent data point from the response
-    const latestDate = Object.keys(powerData.properties.parameter.T2M).sort().pop();
-    if (!latestDate) {
-        throw new Error("No data returned from NASA POWER API for the requested dates.");
-    }
-
-    // Extract values, POWER API returns -999 for missing data
-    const temperature = powerData.properties.parameter.T2M[latestDate];
-    const minTemperature = powerData.properties.parameter.T2M_MIN[latestDate];
-    const maxTemperature = powerData.properties.parameter.T2M_MAX[latestDate];
-    const humidity = powerData.properties.parameter.RH2M[latestDate];
-    const precipitation = powerData.properties.parameter.PRECTOTCORR[latestDate]; // in mm/day
-    const windSpeed = powerData.properties.parameter.WS2M[latestDate];
-    const pressure = powerData.properties.parameter.PS[latestDate];
-
-    if (temperature === -999 || humidity === -999 || minTemperature === -999 || maxTemperature === -999) {
-        throw new Error("Meteorological data from NASA POWER is currently unavailable for this location.");
-    }
-
-    // A simple way to estimate rain chance from daily precipitation amount. This is a heuristic.
-    // NASA POWER provides total precipitation, not probability. This data is informed by GPM IMERG.
-    const rainChance = precipitation > 0 ? Math.min(100, Math.ceil(precipitation * 10)) : 0;
-    
-    // Air Quality data is not available from the POWER API's point-in-time endpoint.
-    // For a production app, this would involve a different NASA dataset (e.g., GEOS-CF) and more complex data processing.
-    // We will simulate it for now as a placeholder.
-    const pm25 = 5 + Math.random() * 30;
-    const o3 = 20 + Math.random() * 80;
-    const co = 200 + Math.random() * 300;
-    const no2 = 10 + Math.random() * 40;
-
-    return {
-        temperature: Math.round(temperature),
-        minTemperature: Math.round(minTemperature),
-        maxTemperature: Math.round(maxTemperature),
-        humidity: Math.round(humidity),
-        rainChance: rainChance,
-        windSpeed: parseFloat(windSpeed.toFixed(2)),
-        pressure: parseFloat(pressure.toFixed(2)),
-        airQuality: {
-            pm25: parseFloat(pm25.toFixed(2)),
-            o3: parseFloat(o3.toFixed(2)),
-            co: parseFloat(co.toFixed(2)),
-            no2: parseFloat(no2.toFixed(2)),
-        },
-    };
 }
 
 
-export async function getWeatherData(location: Location): Promise<WeatherResponse> {
+export async function getWeatherData(location: Location): Promise<ApiResponse> {
   try {
-    const currentConditions = await getNASAData(location);
+    const currentConditions = await getOpenMeteoData(location);
     
     return {
       success: true,
@@ -107,10 +100,10 @@ export async function getWeatherData(location: Location): Promise<WeatherRespons
       },
     };
   } catch (error) {
-    console.error('Error fetching NASA data:', error);
+    console.error('Error fetching weather data:', error);
     if (error instanceof Error) {
         return { success: false, error: error.message };
     }
-    return { success: false, error: 'An unknown error occurred while fetching NASA data.' };
+    return { success: false, error: 'An unknown error occurred while fetching weather data.' };
   }
 }
