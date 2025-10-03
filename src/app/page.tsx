@@ -8,9 +8,7 @@ import { AirQualityCard } from '@/components/dashboard/air-quality-card';
 import { ForecastTabs } from '@/components/dashboard/forecast-tabs';
 import { HistoricalChartCard } from '@/components/dashboard/historical-chart-card';
 import { getWeatherData } from './actions/get-weather-data';
-import {
-  getMockHistoricalData,
-} from '@/lib/placeholder-data';
+import { getHistoricalData } from './actions/get-historical-data';
 import { Thermometer, Droplets, CloudRain, ThermometerSun, ThermometerSnowflake, Wind, Gauge } from 'lucide-react';
 import type { CurrentConditions, Forecast, HistoricalDataPoint } from '@/lib/types';
 import { Card, CardHeader, CardContent } from '@/components/ui/card';
@@ -47,31 +45,33 @@ export default function Home() {
   const [historicalData30d, setHistoricalData30d] = useState<HistoricalDataPoint[]>([]);
 
   useEffect(() => {
-    // When location is available, fetch the weather data
     if (location) {
       startTransition(async () => {
         setApiError(null);
-        setCurrentConditions(null); // Reset conditions before fetching
+        setCurrentConditions(null); 
+        
         try {
-            const result = await getWeatherData({ lat: location.lat, lon: location.lon });
-            if (result.success) {
-              setCurrentConditions(result.data.current);
+            const weatherResult = await getWeatherData({ lat: location.lat, lon: location.lon });
+            if (weatherResult.success) {
+              setCurrentConditions(weatherResult.data.current);
             } else {
-              setApiError(result.error);
+              setApiError(weatherResult.error);
             }
+
+            // Fetch historical data
+            const [data7d, data30d] = await Promise.all([
+              getHistoricalData(location, 7),
+              getHistoricalData(location, 30)
+            ]);
+            setHistoricalData7d(data7d);
+            setHistoricalData30d(data30d);
+
         } catch (e: any) {
             setApiError(e.message || "An unexpected error occurred.");
         }
       });
     }
   }, [location]);
-
-  useEffect(() => {
-    // For now, we'll continue to use mock data for historical.
-    setHistoricalData7d(getMockHistoricalData(7));
-    setHistoricalData30d(getMockHistoricalData(30));
-  }, []);
-
 
   const airQualitySummary = getAirQualitySummary(currentConditions?.airQuality);
   const dailyForecast = currentConditions?.dailyForecast || [];
@@ -193,6 +193,7 @@ export default function Home() {
         <HistoricalChartCard
           data7d={historicalData7d}
           data30d={historicalData30d}
+          isLoading={isLoading}
         />
       </main>
     </div>
