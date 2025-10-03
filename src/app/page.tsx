@@ -14,6 +14,7 @@ import type { CurrentConditions, Forecast, HistoricalDataPoint } from '@/lib/typ
 import { Card, CardHeader, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useLocation } from '@/hooks/use-location';
+import { AreaHealthAnalysisCard } from '@/components/dashboard/area-health-analysis-card';
 
 const getAirQualitySummary = (
   airQuality: CurrentConditions['airQuality'] | undefined
@@ -181,7 +182,16 @@ export default function Home() {
                 />
              )}
           </div>
-          <div className="lg:col-span-2">
+          <div className="lg:col-span-1">
+             {isLoading || !currentConditions ? (
+                <Skeleton className="h-[350px] w-full" />
+              ) : (
+                <AreaHealthAnalysisCard
+                  currentConditions={currentConditions}
+                />
+             )}
+          </div>
+          <div className="lg:col-span-1">
              {isLoading || dailyForecast.length === 0 ? (
                 <Skeleton className="h-[350px] w-full" />
               ) : (
