@@ -26,7 +26,8 @@ export async function getHistoricalData(location: Location, days: 7 | 30): Promi
     }
 
     const { lat, lon } = location;
-    const endDate = new Date();
+    // Account for data latency from the NASA POWER API (usually a few days)
+    const endDate = subDays(new Date(), 3); 
     const startDate = subDays(endDate, days - 1);
 
     const formattedStartDate = format(startDate, 'yyyyMMdd');
