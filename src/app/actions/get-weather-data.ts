@@ -2,6 +2,7 @@
 
 import type { Location, CurrentConditions } from '@/lib/types';
 import fetch from 'node-fetch';
+import { format, subDays } from 'date-fns';
 
 interface WeatherData {
   current: CurrentConditions;
@@ -29,9 +30,12 @@ async function getNASAData(location: Location): Promise<CurrentConditions> {
     }
     
     // API docs: https://power.larc.nasa.gov/docs/api/
-    // We are using the near real-time data endpoint.
+    // We are using the near real-time data endpoint, which requires a date range. We'll ask for yesterday's data.
+    const endDate = format(subDays(new Date(), 1), 'yyyyMMdd');
+    const startDate = format(subDays(new Date(), 2), 'yyyyMMdd');
+
     const parameters = "T2M,T2M_MIN,T2M_MAX,RH2M,PRECTOTCORR,WS2M,PS";
-    const powerApiUrl = `https://power.larc.nasa.gov/api/point?parameters=${parameters}&community=RE&longitude=${lon}&latitude=${lat}&format=JSON&key=${apiKey}`;
+    const powerApiUrl = `https://power.larc.nasa.gov/api/v2/meteorology/daily/point?parameters=${parameters}&community=RE&longitude=${lon}&latitude=${lat}&start=${startDate}&end=${endDate}&format=JSON`;
 
     const powerResponse = await fetch(powerApiUrl);
 
@@ -43,14 +47,20 @@ async function getNASAData(location: Location): Promise<CurrentConditions> {
 
     const powerData = await powerResponse.json();
     
+    // Extract the most recent data point from the response
+    const latestDate = Object.keys(powerData.properties.parameter.T2M).sort().pop();
+    if (!latestDate) {
+        throw new Error("No data returned from NASA POWER API for the requested dates.");
+    }
+
     // Extract values, POWER API returns -999 for missing data
-    const temperature = powerData.properties.parameter.T2M;
-    const minTemperature = powerData.properties.parameter.T2M_MIN;
-    const maxTemperature = powerData.properties.parameter.T2M_MAX;
-    const humidity = powerData.properties.parameter.RH2M;
-    const precipitation = powerData.properties.parameter.PRECTOTCORR; // in mm/day
-    const windSpeed = powerData.properties.parameter.WS2M;
-    const pressure = powerData.properties.parameter.PS;
+    const temperature = powerData.properties.parameter.T2M[latestDate];
+    const minTemperature = powerData.properties.parameter.T2M_MIN[latestDate];
+    const maxTemperature = powerData.properties.parameter.T2M_MAX[latestDate];
+    const humidity = powerData.properties.parameter.RH2M[latestDate];
+    const precipitation = powerData.properties.parameter.PRECTOTCORR[latestDate]; // in mm/day
+    const windSpeed = powerData.properties.parameter.WS2M[latestDate];
+    const pressure = powerData.properties.parameter.PS[latestDate];
 
     if (temperature === -999 || humidity === -999 || minTemperature === -999 || maxTemperature === -999) {
         throw new Error("Meteorological data from NASA POWER is currently unavailable for this location.");
