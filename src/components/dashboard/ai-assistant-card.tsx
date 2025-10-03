@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Bot, User, Send, Loader2, Sparkles } from 'lucide-react';
@@ -72,8 +72,8 @@ export function AIAssistantCard() {
   };
 
   return (
-    <Card className="w-full">
-      <CardHeader>
+    <div className="flex flex-col h-[60vh]">
+       <CardHeader>
         <div className="flex items-center gap-3">
           <Sparkles className="h-6 w-6 text-primary" />
           <div>
@@ -82,7 +82,7 @@ export function AIAssistantCard() {
           </div>
         </div>
       </CardHeader>
-      <CardContent className="h-[300px] overflow-y-auto space-y-4 pr-6 pl-2 border-t border-b py-4">
+      <CardContent className="flex-1 overflow-y-auto space-y-4 pr-6 pl-2 border-t border-b py-4">
         {messages.map((msg) => (
           <div key={msg.id} className={`flex items-start gap-3 ${msg.role === 'user' ? 'justify-end' : ''}`}>
             {msg.role === 'assistant' && (
@@ -132,6 +132,6 @@ export function AIAssistantCard() {
           </Button>
         </form>
       </CardFooter>
-    </Card>
+    </div>
   );
 }
