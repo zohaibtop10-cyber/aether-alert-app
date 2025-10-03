@@ -35,7 +35,7 @@ async function getNASAData(location: Location): Promise<CurrentConditions> {
     const startDate = format(subDays(new Date(), 2), 'yyyyMMdd');
 
     const parameters = "T2M,T2M_MIN,T2M_MAX,RH2M,PRECTOTCORR,WS2M,PS";
-    const powerApiUrl = `https://power.larc.nasa.gov/api/v2/meteorology/daily/point?parameters=${parameters}&community=RE&longitude=${lon}&latitude=${lat}&start=${startDate}&end=${endDate}&format=JSON`;
+    const powerApiUrl = `https://power.larc.nasa.gov/api/temporal/daily/point?parameters=${parameters}&community=RE&longitude=${lon}&latitude=${lat}&start=${startDate}&end=${endDate}&format=JSON`;
 
     const powerResponse = await fetch(powerApiUrl);
 
