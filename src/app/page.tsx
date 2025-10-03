@@ -9,7 +9,6 @@ import { ForecastTabs } from '@/components/dashboard/forecast-tabs';
 import { HistoricalChartCard } from '@/components/dashboard/historical-chart-card';
 import { getWeatherData } from './actions/get-weather-data';
 import {
-  getMockForecast,
   getMockHistoricalData,
 } from '@/lib/placeholder-data';
 import { Thermometer, Droplets, CloudRain, ThermometerSun, ThermometerSnowflake, Wind, Gauge } from 'lucide-react';
@@ -42,8 +41,6 @@ export default function Home() {
   const [isPending, startTransition] = useTransition();
 
   const [currentConditions, setCurrentConditions] = useState<CurrentConditions | null>(null);
-  const [dailyForecast, setDailyForecast] = useState<Forecast[]>([]);
-  const [hourlyForecast, setHourlyForecast] = useState<Forecast[]>([]);
   const [apiError, setApiError] = useState<string | null>(null);
   
   const [historicalData7d, setHistoricalData7d] = useState<HistoricalDataPoint[]>([]);
@@ -69,17 +66,15 @@ export default function Home() {
   }, [location]);
 
   useEffect(() => {
-    // For now, we'll continue to use mock data for forecast and historical.
-    // This needs to be in useEffect to avoid hydration errors since it uses Math.random()
-    setDailyForecast(getMockForecast('daily'));
-    setHourlyForecast(getMockForecast('hourly'));
+    // For now, we'll continue to use mock data for historical.
     setHistoricalData7d(getMockHistoricalData(7));
     setHistoricalData30d(getMockHistoricalData(30));
   }, []);
 
 
   const airQualitySummary = getAirQualitySummary(currentConditions?.airQuality);
-
+  const dailyForecast = currentConditions?.dailyForecast || [];
+  const hourlyForecast = currentConditions?.hourlyForecast || [];
   const isLoading = isLocating || isPending;
 
   return (

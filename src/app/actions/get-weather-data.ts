@@ -1,6 +1,6 @@
 'use server';
 
-import type { Location, CurrentConditions } from '@/lib/types';
+import type { Location, CurrentConditions, Forecast } from '@/lib/types';
 import fetch from 'node-fetch';
 
 interface WeatherResponse {
@@ -17,11 +17,20 @@ interface ErrorResponse {
 
 type ApiResponse = WeatherResponse | ErrorResponse;
 
+const getAirQualityStatus = (pm25: number) => {
+    if (pm25 <= 12) return 'Good';
+    if (pm25 <= 35.4) return 'Moderate';
+    if (pm25 <= 55.4) return 'Unhealthy';
+    if (pm25 <= 150.4) return 'Unhealthy';
+    if (pm25 <= 250.4) return 'Very Unhealthy';
+    return 'Hazardous';
+};
+
 // Fetches data from Open-Meteo API
 async function getOpenMeteoData(location: Location): Promise<CurrentConditions> {
     const { lat, lon } = location;
 
-    // Weather API URL
+    // Common params for weather
     const weatherParams = [
         "temperature_2m",
         "relative_humidity_2m",
@@ -29,8 +38,14 @@ async function getOpenMeteoData(location: Location): Promise<CurrentConditions> 
         "wind_speed_10m",
         "surface_pressure",
     ].join(",");
-    const dailyParams = ["temperature_2m_max", "temperature_2m_min"].join(",");
-    const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=${weatherParams}&daily=${dailyParams}&timezone=auto&forecast_days=1`;
+    
+    // Daily forecast params
+    const dailyParams = ["temperature_2m_max", "temperature_2m_min", "precipitation_probability_max"].join(",");
+    
+    // Hourly forecast params
+    const hourlyParams = ["temperature_2m", "precipitation_probability", "pm2_5"].join(",");
+
+    const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=${weatherParams}&daily=${dailyParams}&hourly=${hourlyParams}&timezone=auto&forecast_days=7`;
 
     // Air Quality API URL
     const airQualityParams = ["pm2_5", "ozone", "carbon_monoxide", "nitrogen_dioxide"].join(",");
@@ -54,11 +69,35 @@ async function getOpenMeteoData(location: Location): Promise<CurrentConditions> 
 
         const current = weatherData.current;
         const daily = weatherData.daily;
+        const hourly = weatherData.hourly;
         const aqCurrent = airQualityData.current;
 
-        if (!current || !daily || !aqCurrent) {
+        if (!current || !daily || !hourly || !aqCurrent) {
             throw new Error("Incomplete data received from Open-Meteo APIs.");
         }
+
+        // Process daily forecast
+        const dailyForecast: Forecast[] = daily.time.slice(0, 7).map((time: string, index: number) => ({
+            time: new Date(time).toLocaleDateString('en-US', { weekday: 'short' }),
+            temperature: Math.round((daily.temperature_2m_max[index] + daily.temperature_2m_min[index]) / 2),
+            rainChance: daily.precipitation_probability_max[index],
+            // Note: Open-Meteo doesn't provide daily AQI forecast easily, so we use a placeholder logic or omit it.
+            // For simplicity, we'll derive a status from temp, but this is not scientifically accurate.
+            airQualityStatus: "N/A"
+        }));
+
+        // Process hourly forecast
+        const now = new Date();
+        const currentHour = now.getHours();
+        const hourlyForecast: Forecast[] = hourly.time.slice(currentHour, currentHour + 24).map((time: string, index: number) => {
+            const actualIndex = currentHour + index;
+            return {
+                time: new Date(time).toLocaleTimeString('en-US', { hour: 'numeric', hour12: true }),
+                temperature: Math.round(hourly.temperature_2m[actualIndex]),
+                rainChance: hourly.precipitation_probability[actualIndex],
+                airQualityStatus: getAirQualityStatus(hourly.pm2_5[actualIndex])
+            };
+        });
 
         // Pressure is in hPa, convert to kPa for consistency
         const pressureInKpa = current.surface_pressure / 10;
@@ -77,6 +116,8 @@ async function getOpenMeteoData(location: Location): Promise<CurrentConditions> 
                 co: parseFloat(aqCurrent.carbon_monoxide.toFixed(2)),
                 no2: parseFloat(aqCurrent.nitrogen_dioxide.toFixed(2)),
             },
+            dailyForecast,
+            hourlyForecast
         };
 
     } catch (error) {

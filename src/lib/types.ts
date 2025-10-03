@@ -22,6 +22,8 @@ export interface CurrentConditions {
   windSpeed: number;
   pressure: number;
   airQuality: AirQuality;
+  dailyForecast: Forecast[];
+  hourlyForecast: Forecast[];
 }
 
 export interface Forecast {
