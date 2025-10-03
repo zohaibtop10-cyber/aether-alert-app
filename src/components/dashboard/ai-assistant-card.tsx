@@ -1,0 +1,137 @@
+'use client';
+
+import { useState, useRef, useEffect } from 'react';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Bot, User, Send, Loader2, Sparkles } from 'lucide-react';
+import { nanoid } from 'nanoid';
+import { askNasaAssistant } from '@/app/actions/ask-nasa-assistant';
+import { useLocation } from '@/hooks/use-location';
+
+interface Message {
+  id: string;
+  role: 'user' | 'assistant';
+  text: string;
+}
+
+export function AIAssistantCard() {
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [input, setInput] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const { location } = useLocation();
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  useEffect(scrollToBottom, [messages]);
+  
+  useEffect(() => {
+    if (messages.length === 0) {
+      setMessages([
+        {
+          id: nanoid(),
+          role: 'assistant',
+          text: "Hello! I'm your NASA data assistant. Ask me about historical weather trends, like 'What was the temperature trend over the last week?' or 'Compare rainfall in the last 7 and 30 days.'",
+        }
+      ]);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!input.trim() || !location) return;
+
+    const userMessage: Message = { id: nanoid(), role: 'user', text: input };
+    setMessages((prev) => [...prev, userMessage]);
+    setInput('');
+    setIsLoading(true);
+
+    try {
+      const assistantResponse = await askNasaAssistant(input, location);
+      const assistantMessage: Message = {
+        id: nanoid(),
+        role: 'assistant',
+        text: assistantResponse,
+      };
+      setMessages((prev) => [...prev, assistantMessage]);
+    } catch (error) {
+      const errorMessage: Message = {
+        id: nanoid(),
+        role: 'assistant',
+        text: 'Sorry, I encountered an error. Please try again.',
+      };
+      setMessages((prev) => [...prev, errorMessage]);
+      console.error('Error calling AI assistant:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <Card className="w-full">
+      <CardHeader>
+        <div className="flex items-center gap-3">
+          <Sparkles className="h-6 w-6 text-primary" />
+          <div>
+            <CardTitle>NASA Data Assistant</CardTitle>
+            <CardDescription>Ask questions about historical environmental data.</CardDescription>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent className="h-[300px] overflow-y-auto space-y-4 pr-6 pl-2 border-t border-b py-4">
+        {messages.map((msg) => (
+          <div key={msg.id} className={`flex items-start gap-3 ${msg.role === 'user' ? 'justify-end' : ''}`}>
+            {msg.role === 'assistant' && (
+              <div className="flex-shrink-0 size-8 rounded-full bg-primary/10 text-primary flex items-center justify-center">
+                <Bot className="size-5" />
+              </div>
+            )}
+            <div
+              className={`max-w-[75%] rounded-lg p-3 text-sm ${
+                msg.role === 'user'
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-muted'
+              }`}
+            >
+              {msg.text}
+            </div>
+            {msg.role === 'user' && (
+              <div className="flex-shrink-0 size-8 rounded-full bg-muted flex items-center justify-center">
+                <User className="size-5" />
+              </div>
+            )}
+          </div>
+        ))}
+        {isLoading && (
+            <div className="flex items-start gap-3">
+                <div className="flex-shrink-0 size-8 rounded-full bg-primary/10 text-primary flex items-center justify-center">
+                    <Bot className="size-5" />
+                </div>
+                <div className="bg-muted p-3 rounded-lg">
+                    <Loader2 className="size-5 animate-spin" />
+                </div>
+            </div>
+        )}
+        <div ref={messagesEndRef} />
+      </CardContent>
+      <CardFooter className="pt-6">
+        <form onSubmit={handleSubmit} className="flex w-full items-center space-x-2">
+          <Input
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            placeholder="Ask about historical data..."
+            disabled={isLoading || !location}
+          />
+          <Button type="submit" size="icon" disabled={isLoading || !input.trim() || !location}>
+            <Send className="h-4 w-4" />
+            <span className="sr-only">Send</span>
+          </Button>
+        </form>
+      </CardFooter>
+    </Card>
+  );
+}

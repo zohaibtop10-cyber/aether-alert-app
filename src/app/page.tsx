@@ -15,6 +15,7 @@ import { Card, CardHeader, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useLocation } from '@/hooks/use-location';
 import { AreaHealthAnalysisCard } from '@/components/dashboard/area-health-analysis-card';
+import { AIAssistantCard } from '@/components/dashboard/ai-assistant-card';
 
 const getAirQualitySummary = (
   airQuality: CurrentConditions['airQuality'] | undefined
@@ -205,6 +206,8 @@ export default function Home() {
           data30d={historicalData30d}
           isLoading={isLoading}
         />
+
+        <AIAssistantCard />
       </main>
     </div>
   );
