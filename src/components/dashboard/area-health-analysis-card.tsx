@@ -8,7 +8,7 @@ import {
   type GenerateAreaHealthAnalysisOutput,
 } from '@/ai/flows/generate-area-health-analysis';
 import type { CurrentConditions } from '@/lib/types';
-import { HeartPulse, TrendingDown, TrendingUp } from 'lucide-react';
+import { HeartPulse } from 'lucide-react';
 import { Badge } from '../ui/badge';
 
 interface AreaHealthAnalysisCardProps {
@@ -82,14 +82,11 @@ export function AreaHealthAnalysisCard({ currentConditions }: AreaHealthAnalysis
               </p>
             </div>
             <div>
-              <h4 className="mb-2 font-semibold">Ranked Health Concerns</h4>
+              <h4 className="mb-2 font-semibold">Top Health Concerns</h4>
               <ul className="space-y-3">
                 {analysis.rankedDiseases.map((disease) => (
                   <li key={disease.rank} className="rounded-lg border bg-card p-3">
-                    <div className="flex items-start justify-between">
-                      <p className="font-semibold">{disease.name}</p>
-                      <Badge variant="secondary" className="font-mono">#{disease.rank}</Badge>
-                    </div>
+                    <p className="font-semibold text-base mb-1">{disease.name}</p>
                     <p className="text-sm text-muted-foreground">{disease.reason}</p>
                   </li>
                 ))}
