@@ -11,7 +11,12 @@ export async function askNasaAssistant(query: string, location: Location): Promi
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ query, location }),
+            body: JSON.stringify({ 
+                latitude: location.lat,
+                longitude: location.lon,
+                question: query,
+                disease: location.disease || ''
+            }),
         });
 
         if (!response.ok) {
