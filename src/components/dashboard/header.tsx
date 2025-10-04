@@ -15,10 +15,11 @@ export default function Header() {
        <Button
           variant="ghost"
           size="icon"
-          className="md:hidden"
+          className="lg:hidden"
           onClick={toggleSidebar}
         >
           <Menu />
+          <span className="sr-only">Toggle Sidebar</span>
         </Button>
       <div className="hidden items-center gap-2 md:flex">
         <AirVent className="h-6 w-6 text-primary" />
