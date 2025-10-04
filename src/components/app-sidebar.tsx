@@ -98,7 +98,7 @@ export default function AppSidebar() {
         <SidebarMenu>
           {sidebarNav.map((item) => (
             <SidebarMenuItem key={item.title}>
-              <Link href={item.href} passHref>
+              <Link href={item.href} legacyBehavior passHref>
                 <SidebarMenuButton
                   as="a"
                   isActive={pathname === item.href}
@@ -111,16 +111,18 @@ export default function AppSidebar() {
           ))}
           <Collapsible>
             <CollapsibleTrigger asChild>
-              <SidebarMenuButton icon={<Users />}>
-                Community
-              </SidebarMenuButton>
+              <SidebarMenuButton icon={<Users />}>Community</SidebarMenuButton>
             </CollapsibleTrigger>
             <CollapsibleContent className="data-[state=closed]:animate-none">
               <SidebarMenuSub>
                 {communityNav.map((item) => (
                   <SidebarMenuSubItem key={item.title}>
-                    <Link href={item.href} passHref>
-                      <SidebarMenuSubButton as="a" isActive={pathname.startsWith(item.href)} icon={<item.icon />}>
+                    <Link href={item.href} legacyBehavior passHref>
+                      <SidebarMenuSubButton
+                        as="a"
+                        isActive={pathname.startsWith(item.href)}
+                        icon={<item.icon />}
+                      >
                         {item.title}
                       </SidebarMenuSubButton>
                     </Link>
@@ -130,8 +132,8 @@ export default function AppSidebar() {
             </CollapsibleContent>
           </Collapsible>
           <SidebarMenuItem>
-            <Link href="/profile" passHref>
-              <SidebarMenuButton as="a" isActive={pathname === "/profile"} icon={<User />}>
+            <Link href="/profile" legacyBehavior passHref>
+              <SidebarMenuButton as="a" isActive={pathname === '/profile'} icon={<User />}>
                 Profile
               </SidebarMenuButton>
             </Link>
