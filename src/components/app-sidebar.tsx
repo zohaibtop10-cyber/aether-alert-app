@@ -22,6 +22,8 @@ import {
   ChevronsLeft,
   Users,
   GitCompare,
+  CalendarDays,
+  MessageSquare,
 } from 'lucide-react';
 import { ThemeToggle } from './theme-toggle';
 import { usePathname } from 'next/navigation';
@@ -62,10 +64,12 @@ const communityNav = [
   {
     title: 'Events',
     href: '/community/events',
+    icon: CalendarDays
   },
   {
     title: 'Posts',
     href: '/community/posts',
+    icon: MessageSquare
   },
 ];
 

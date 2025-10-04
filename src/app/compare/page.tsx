@@ -1,12 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useTransition } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { useLocation } from '@/hooks/use-location';
 import { Skeleton } from '@/components/ui/skeleton';
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, Globe, RefreshCw } from 'lucide-react';
 import Image from 'next/image';
 import { format } from 'date-fns';
+import { Button } from '@/components/ui/button';
 
 // Function to convert Lat/Lon to Tile coordinates for WMTS
 function latLonToTile(lat: number, lon: number, zoom: number): { x: number, y: number } {
@@ -17,66 +18,83 @@ function latLonToTile(lat: number, lon: number, zoom: number): { x: number, y: n
     return { x, y };
 }
 
-
 function getGIBSEarthImageUrl(date: Date, lat: number, lon: number): string {
     const formattedDate = format(date, 'yyyy-MM-dd');
     const zoom = 6;
     const {x, y} = latLonToTile(lat, lon, zoom);
-
-    // Using NASA GIBS Blue Marble layer for a visually clear before/after
     const layer = 'MODIS_Terra_CorrectedReflectance_TrueColor';
-
     return `https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/${layer}/default/${formattedDate}/GoogleMapsCompatible_Level${zoom}/${y}/${x}.jpg`;
 }
 
+function getRandomLocation() {
+    const lat = Math.random() * 180 - 90;  // -90 to 90
+    const lon = Math.random() * 360 - 180; // -180 to 180
+    return { lat, lon };
+}
+
+
 export default function ComparePage() {
-    const { location, isLocating, error: locationError } = useLocation();
+    const { location: userLocation, isLocating: isUserLocating, error: locationError } = useLocation();
+    const [isPending, startTransition] = useTransition();
+
+    const [comparisonLocation, setComparisonLocation] = useState<{lat: number, lon: number} | null>(null);
+    const [locationName, setLocationName] = useState<string>('your location');
+
     const [beforeImageUrl, setBeforeImageUrl] = useState<string | null>(null);
     const [afterImageUrl, setAfterImageUrl] = useState<string | null>(null);
-    const [isLoading, setIsLoading] = useState(true);
-
+    
     const today = new Date();
+    // GIBS data might have a delay of a day or two
+    const recentDate = new Date(new Date().setDate(today.getDate() - 2)); 
     const oneYearAgo = new Date(new Date().setFullYear(today.getFullYear() - 1));
 
-    useEffect(() => {
-        if (location && !isLocating) {
-            setIsLoading(true);
+    const generateComparison = (loc: {lat: number, lon: number} | null) => {
+        if (!loc) return;
+        
+        startTransition(() => {
             try {
-                // Generate URLs for NASA GIBS imagery based on user location
-                const afterUrl = getGIBSEarthImageUrl(today, location.lat, location.lon);
-                const beforeUrl = getGIBSEarthImageUrl(oneYearAgo, location.lat, location.lon);
-                
+                const afterUrl = getGIBSEarthImageUrl(recentDate, loc.lat, loc.lon);
+                const beforeUrl = getGIBSEarthImageUrl(oneYearAgo, loc.lat, loc.lon);
                 setAfterImageUrl(afterUrl);
                 setBeforeImageUrl(beforeUrl);
             } catch (e) {
                 console.error("Error generating image URLs", e);
-            } finally {
-                setIsLoading(false);
+                setAfterImageUrl(null);
+                setBeforeImageUrl(null);
             }
+        });
+    }
+
+    // Effect to initialize with user's location
+    useEffect(() => {
+        if (userLocation && !comparisonLocation) {
+            setComparisonLocation(userLocation);
         }
-    }, [location, isLocating, today, oneYearAgo]);
+    }, [userLocation, comparisonLocation]);
+    
+    // Effect to generate images when comparison location changes
+    useEffect(() => {
+        generateComparison(comparisonLocation);
+    }, [comparisonLocation, recentDate, oneYearAgo]);
+
+
+    const handleRandomLocation = () => {
+        const randomLoc = getRandomLocation();
+        setComparisonLocation(randomLoc);
+        setLocationName(`Lat: ${randomLoc.lat.toFixed(2)}, Lon: ${randomLoc.lon.toFixed(2)}`);
+    }
 
     const renderContent = () => {
-        if (isLocating || isLoading) {
+        if (isUserLocating && !comparisonLocation) {
             return (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <Card>
-                        <CardHeader>
-                            <Skeleton className="h-6 w-3/4" />
-                            <Skeleton className="h-4 w-1/2" />
-                        </CardHeader>
-                        <CardContent>
-                            <Skeleton className="aspect-square w-full" />
-                        </CardContent>
+                        <CardHeader><Skeleton className="h-6 w-3/4" /></CardHeader>
+                        <CardContent><Skeleton className="aspect-square w-full" /></CardContent>
                     </Card>
                     <Card>
-                        <CardHeader>
-                            <Skeleton className="h-6 w-3/4" />
-                            <Skeleton className="h-4 w-1/2" />
-                        </CardHeader>
-                        <CardContent>
-                            <Skeleton className="aspect-square w-full" />
-                        </CardContent>
+                        <CardHeader><Skeleton className="h-6 w-3/4" /></CardHeader>
+                        <CardContent><Skeleton className="aspect-square w-full" /></CardContent>
                     </Card>
                 </div>
             );
@@ -86,10 +104,35 @@ export default function ComparePage() {
             return (
                 <div className="flex flex-col items-center justify-center text-center gap-4 text-destructive">
                     <AlertTriangle className="h-12 w-12" />
-                    <p className="font-semibold">Could not load location data.</p>
+                    <p className="font-semibold">Could not determine a location for comparison.</p>
                     <p>{locationError}</p>
                 </div>
             );
+        }
+
+        if (isPending) {
+            return (
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <Card>
+                        <CardHeader>
+                            <Skeleton className="h-6 w-3/4" />
+                            <Skeleton className="h-4 w-1/2" />
+                        </CardHeader>
+                        <CardContent>
+                            <Skeleton className="aspect-square w-full" />
+                        </CardContent>
+                    </Card>
+                    <Card>
+                        <CardHeader>
+                            <Skeleton className="h-6 w-3/4" />
+                            <Skeleton className="h-4 w-1/2" />
+                        </CardHeader>
+                        <CardContent>
+                            <Skeleton className="aspect-square w-full" />
+                        </CardContent>
+                    </Card>
+                </div>
+            )
         }
 
         if (!beforeImageUrl || !afterImageUrl) {
@@ -97,6 +140,7 @@ export default function ComparePage() {
                 <div className="flex flex-col items-center justify-center text-center gap-4 text-muted-foreground">
                     <AlertTriangle className="h-12 w-12" />
                     <p>Could not load satellite imagery for this location.</p>
+                     <p className="text-sm">This can happen for areas with no recent cloud-free imagery, like polar regions.</p>
                 </div>
             );
         }
@@ -114,16 +158,16 @@ export default function ComparePage() {
                             alt="Satellite image from one year ago"
                             width={600}
                             height={600}
-                            className="rounded-lg object-cover aspect-square"
-                            unoptimized // Required for NASA GIBS which doesn't support optimization
+                            className="rounded-lg object-cover aspect-square bg-muted"
+                            unoptimized
                             onError={() => setBeforeImageUrl(null)}
                         />
                     </CardContent>
                 </Card>
                 <Card>
                     <CardHeader>
-                        <CardTitle>Today</CardTitle>
-                        <CardDescription>{format(today, 'MMMM dd, yyyy')}</CardDescription>
+                        <CardTitle>Now</CardTitle>
+                        <CardDescription>{format(recentDate, 'MMMM dd, yyyy')}</CardDescription>
                     </CardHeader>
                     <CardContent>
                         <Image
@@ -131,7 +175,7 @@ export default function ComparePage() {
                             alt="Satellite image from today"
                             width={600}
                             height={600}
-                            className="rounded-lg object-cover aspect-square"
+                            className="rounded-lg object-cover aspect-square bg-muted"
                             unoptimized
                             onError={() => setAfterImageUrl(null)}
                         />
@@ -143,11 +187,23 @@ export default function ComparePage() {
 
     return (
         <div className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
-            <div className="grid gap-4">
-                <h1 className="font-semibold text-3xl">Climate Comparison</h1>
-                <p className="text-muted-foreground">
-                    Satellite imagery comparison for your location, one year apart. Data provided by NASA GIBS.
-                </p>
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div>
+                    <h1 className="font-semibold text-3xl">Before & Now</h1>
+                    <p className="text-muted-foreground">
+                        Satellite imagery comparison for <span className="font-semibold text-primary">{locationName}</span>, one year apart. Data by NASA GIBS.
+                    </p>
+                </div>
+                <div className="flex items-center gap-2">
+                    <Button onClick={() => generateComparison(comparisonLocation)} disabled={isPending}>
+                        <RefreshCw className={`mr-2 h-4 w-4 ${isPending ? 'animate-spin' : ''}`} />
+                        Refresh
+                    </Button>
+                    <Button onClick={handleRandomLocation} variant="outline" disabled={isPending}>
+                        <Globe className="mr-2 h-4 w-4" />
+                        Random Location
+                    </Button>
+                </div>
             </div>
             {renderContent()}
         </div>
