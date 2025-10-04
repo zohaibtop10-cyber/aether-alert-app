@@ -1,6 +1,7 @@
 'use server';
 
 import { ecoBot } from '@/ai/flows/eco-bot';
+import { callMakeWebhook } from '@/ai/flows/webhook-tool';
 import { streamText } from '@genkit-ai/ai';
 import { CoreMessage } from '@genkit-ai/ai/message';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
@@ -27,11 +28,11 @@ Your purpose is to provide users with accurate, real-time environmental data and
 - If NASA data is unavailable, you can use Open-Meteo as a fallback.
 - Always be helpful, clear, and encouraging. Explain complex environmental topics in a simple way.
 - Use the user's location to provide personalized information.
-- Provide answers based on the tools you have available.
+- Provide answers based on the tools you have available. You can call external webhooks for automations.
 - If you don't know the answer, say so. Do not make up information.
 - Suggest eco-friendly actions and energy-saving tips where appropriate.`,
       history,
-      tools: [ecoBot],
+      tools: [ecoBot, callMakeWebhook],
       toolConfig: {
         context: {
           location: location,
