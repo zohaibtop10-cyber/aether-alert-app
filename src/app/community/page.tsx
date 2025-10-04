@@ -9,7 +9,7 @@ export default function CommunityPage() {
       <div className="grid gap-4">
         <h1 className="font-semibold text-3xl">Community</h1>
         <p className="text-muted-foreground">
-          Engage with the MyClimateGuard community.
+          Engage with the Aether Alert community.
         </p>
       </div>
 

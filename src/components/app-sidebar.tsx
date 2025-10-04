@@ -24,6 +24,9 @@ import {
   GitCompare,
   CalendarClock,
   MessageSquare,
+  FileText,
+  Database,
+  House,
 } from 'lucide-react';
 import { ThemeToggle } from './theme-toggle';
 import { usePathname } from 'next/navigation';
@@ -71,6 +74,16 @@ const communityNav = [
     href: '/community/posts',
     icon: MessageSquare,
   },
+  {
+    title: 'Articles',
+    href: '/community/articles',
+    icon: FileText,
+  },
+  {
+    title: 'Data',
+    href: '/community/data',
+    icon: Database,
+  },
 ];
 
 export default function AppSidebar() {
@@ -90,7 +103,7 @@ export default function AppSidebar() {
         <div className="flex items-center gap-2">
           <AirVent className="h-7 w-7 text-primary" />
           <span className="text-lg font-semibold tracking-tight">
-            MyClimateGuard
+            Aether Alert
           </span>
         </div>
       </SidebarHeader>
@@ -98,41 +111,50 @@ export default function AppSidebar() {
         <SidebarMenu>
           {sidebarNav.map((item) => (
             <SidebarMenuItem key={item.title}>
-              <Link href={item.href} asChild>
-                <SidebarMenuButton
-                  isActive={pathname === item.href}
-                  icon={<item.icon />}
-                >
-                  {item.title}
-                </SidebarMenuButton>
-              </Link>
+              <SidebarMenuButton asChild isActive={pathname === item.href}>
+                <Link href={item.href}>
+                  <item.icon />
+                  <span className="group-data-[collapsible=icon]:hidden">
+                    {item.title}
+                  </span>
+                </Link>
+              </SidebarMenuButton>
             </SidebarMenuItem>
           ))}
           <Collapsible>
             <CollapsibleTrigger asChild>
-              <SidebarMenuButton icon={<Users />}>Community</SidebarMenuButton>
+              <SidebarMenuButton>
+                <Users />
+                <span className="group-data-[collapsible=icon]:hidden">Community</span>
+              </SidebarMenuButton>
             </CollapsibleTrigger>
             <CollapsibleContent className="data-[state=closed]:animate-none">
               <SidebarMenuSub>
                 {communityNav.map((item) => (
                   <SidebarMenuSubItem key={item.title}>
-                    <Link href={item.href} asChild>
-                      <SidebarMenuSubButton isActive={pathname.startsWith(item.href)}>
-                         <item.icon className="h-4 w-4 mr-2" />
+                    <SidebarMenuSubButton
+                      asChild
+                      isActive={pathname.startsWith(item.href)}
+                    >
+                      <Link href={item.href}>
+                        <item.icon className="h-4 w-4 mr-2" />
                         {item.title}
-                      </SidebarMenuSubButton>
-                    </Link>
+                      </Link>
+                    </SidebarMenuSubButton>
                   </SidebarMenuSubItem>
                 ))}
               </SidebarMenuSub>
             </CollapsibleContent>
           </Collapsible>
           <SidebarMenuItem>
-            <Link href="/profile" asChild>
-              <SidebarMenuButton isActive={pathname === '/profile'} icon={<User />}>
-                Profile
-              </SidebarMenuButton>
-            </Link>
+            <SidebarMenuButton asChild isActive={pathname === '/profile'}>
+              <Link href="/profile">
+                <User />
+                <span className="group-data-[collapsible=icon]:hidden">
+                  Profile
+                </span>
+              </Link>
+            </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarContent>

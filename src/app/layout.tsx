@@ -9,7 +9,7 @@ import AppSidebar from '@/components/app-sidebar';
 import { EcoBotChatWidget } from '@/components/ecobot/ecobot-chat-widget';
 
 export const metadata: Metadata = {
-  title: 'MyClimateGuard 2.0',
+  title: 'Aether Alert',
   description: 'Real-time environmental conditions, weather predictions, and health alerts.',
 };
 
