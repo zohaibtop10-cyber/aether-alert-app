@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useTransition } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { useLocation } from '@/hooks/use-location';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AlertTriangle, Globe, RefreshCw } from 'lucide-react';
 import Image from 'next/image';
@@ -32,22 +31,32 @@ function getRandomLocation() {
     return { lat, lon };
 }
 
+function getRandomPastDate(): Date {
+    const today = new Date();
+    // Go back at least a few days to ensure data availability, up to a year
+    const minDaysAgo = 10;
+    const maxDaysAgo = 365;
+    const randomDaysAgo = Math.floor(Math.random() * (maxDaysAgo - minDaysAgo + 1)) + minDaysAgo;
+    
+    const pastDate = new Date();
+    pastDate.setDate(today.getDate() - randomDaysAgo);
+    return pastDate;
+}
+
 
 export default function ComparePage() {
-    const { location: userLocation, isLocating: isUserLocating, error: locationError } = useLocation();
     const [isPending, startTransition] = useTransition();
 
     const [comparisonLocation, setComparisonLocation] = useState<{lat: number, lon: number} | null>(null);
-    const [locationName, setLocationName] = useState<string>('your location');
+    const [locationName, setLocationName] = useState<string>('a random location');
+    const [beforeDate, setBeforeDate] = useState<Date | null>(null);
 
     const [beforeImageUrl, setBeforeImageUrl] = useState<string | null>(null);
     const [afterImageUrl, setAfterImageUrl] = useState<string | null>(null);
     const [imageError, setImageError] = useState<boolean>(false);
     
-    const today = new Date();
     // GIBS data might have a delay of a day or two
-    const recentDate = new Date(new Date().setDate(today.getDate() - 2)); 
-    const oneYearAgo = new Date(new Date().setFullYear(today.getFullYear() - 1));
+    const recentDate = new Date(new Date().setDate(new Date().getDate() - 2)); 
 
     const generateComparison = (loc: {lat: number, lon: number} | null) => {
         if (!loc) return;
@@ -56,9 +65,13 @@ export default function ComparePage() {
             setImageError(false);
             setBeforeImageUrl(null);
             setAfterImageUrl(null);
+
+            const randomPastDate = getRandomPastDate();
+            setBeforeDate(randomPastDate);
+
             try {
                 const afterUrl = getGIBSEarthImageUrl(recentDate, loc.lat, loc.lon);
-                const beforeUrl = getGIBSEarthImageUrl(oneYearAgo, loc.lat, loc.lon);
+                const beforeUrl = getGIBSEarthImageUrl(randomPastDate, loc.lat, loc.lon);
                 setAfterImageUrl(afterUrl);
                 setBeforeImageUrl(beforeUrl);
             } catch (e) {
@@ -68,15 +81,10 @@ export default function ComparePage() {
         });
     }
 
-    // Effect to initialize with user's location
+    // Effect to initialize with a random location
     useEffect(() => {
-        if (userLocation && !comparisonLocation) {
-            setComparisonLocation(userLocation);
-            if (userLocation.city) {
-              setLocationName(`${userLocation.city}, ${userLocation.country}`);
-            }
-        }
-    }, [userLocation, comparisonLocation]);
+        handleRandomLocation();
+    }, []);
     
     // Effect to generate images when comparison location changes
     useEffect(() => {
@@ -93,31 +101,6 @@ export default function ComparePage() {
     }
 
     const renderContent = () => {
-        if (isUserLocating && !comparisonLocation) {
-            return (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <Card>
-                        <CardHeader><Skeleton className="h-6 w-3/4" /></CardHeader>
-                        <CardContent><Skeleton className="aspect-square w-full" /></CardContent>
-                    </Card>
-                    <Card>
-                        <CardHeader><Skeleton className="h-6 w-3/4" /></CardHeader>
-                        <CardContent><Skeleton className="aspect-square w-full" /></CardContent>
-                    </Card>
-                </div>
-            );
-        }
-
-        if (locationError) {
-            return (
-                <div className="flex flex-col items-center justify-center text-center gap-4 text-destructive">
-                    <AlertTriangle className="h-12 w-12" />
-                    <p className="font-semibold">Could not determine a location for comparison.</p>
-                    <p>{locationError}</p>
-                </div>
-            );
-        }
-
         if (isPending || (!beforeImageUrl && !afterImageUrl && !imageError)) {
             return (
                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -132,8 +115,7 @@ export default function ComparePage() {
                     </Card>
                     <Card>
                         <CardHeader>
-                            <Skeleton className="h-6 w-3
-/4" />
+                            <Skeleton className="h-6 w-3/4" />
                             <Skeleton className="h-4 w-1/2" />
                         </CardHeader>
                         <CardContent>
@@ -144,7 +126,7 @@ export default function ComparePage() {
             )
         }
 
-        if (imageError || !beforeImageUrl || !afterImageUrl) {
+        if (imageError || !beforeImageUrl || !afterImageUrl || !beforeDate) {
             return (
                 <div className="flex flex-col items-center justify-center text-center gap-4 text-muted-foreground">
                     <AlertTriangle className="h-12 w-12" />
@@ -158,13 +140,13 @@ export default function ComparePage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <Card>
                     <CardHeader>
-                        <CardTitle>One Year Ago</CardTitle>
-                        <CardDescription>{format(oneYearAgo, 'MMMM dd, yyyy')}</CardDescription>
+                        <CardTitle>Before</CardTitle>
+                        <CardDescription>{format(beforeDate, 'MMMM dd, yyyy')}</CardDescription>
                     </CardHeader>
                     <CardContent>
                         <Image
                             src={beforeImageUrl}
-                            alt="Satellite image from one year ago"
+                            alt="Satellite image from the past"
                             width={600}
                             height={600}
                             className="rounded-lg object-cover aspect-square bg-muted"
@@ -200,7 +182,7 @@ export default function ComparePage() {
                 <div>
                     <h1 className="font-semibold text-3xl">Before & Now</h1>
                     <p className="text-muted-foreground">
-                        Satellite imagery comparison for <span className="font-semibold text-primary">{locationName}</span>, one year apart. Data by NASA GIBS.
+                        Satellite imagery comparison for <span className="font-semibold text-primary">{locationName}</span>. Data by NASA GIBS.
                     </p>
                 </div>
                 <div className="flex items-center gap-2">
@@ -210,7 +192,7 @@ export default function ComparePage() {
                     </Button>
                     <Button onClick={handleRandomLocation} variant="outline" disabled={isPending}>
                         <Globe className="mr-2 h-4 w-4" />
-                        Random Location
+                        Another Location
                     </Button>
                 </div>
             </div>
