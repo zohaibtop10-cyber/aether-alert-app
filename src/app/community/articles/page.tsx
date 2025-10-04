@@ -21,10 +21,10 @@ export default function ArticlesPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col items-center justify-center text-center gap-4 min-h-[300px]">
-            <div className="p-4 bg-muted rounded-full">
-                <Newspaper className="h-12 w-12 text-muted-foreground" />
-            </div>
-            <p className="text-muted-foreground">The articles section is under construction.</p>
+          <div className="p-4 bg-muted rounded-full">
+            <Newspaper className="h-12 w-12 text-muted-foreground" />
+          </div>
+          <p className="text-muted-foreground">The articles section is under construction.</p>
         </CardContent>
       </Card>
     </div>

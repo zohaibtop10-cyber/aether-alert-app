@@ -63,7 +63,7 @@ export default function ProfilePage() {
       notificationsEnabled: true,
     },
   });
-  
+
   const selectedCountry = form.watch('country');
   const cities = countries.find((c) => c.name === selectedCountry)?.cities || [];
 
@@ -78,16 +78,16 @@ export default function ProfilePage() {
       });
     }
   }, [user, location, form]);
-  
+
   async function onSubmit(values: z.infer<typeof profileSchema>) {
     if (!user) return;
     setIsLoading(true);
 
     const userRef = doc(firestore, 'users', user.uid);
     const userData = {
-        name: values.name,
-        email: user.email,
-        healthConditions: values.healthConditions,
+      name: values.name,
+      email: user.email,
+      healthConditions: values.healthConditions,
     };
 
     setDoc(userRef, userData, { merge: true })
@@ -96,25 +96,25 @@ export default function ProfilePage() {
         const selectedCityData = selectedCountryData?.cities.find(city => city.name === values.city);
 
         if (selectedCityData) {
-            setManualLocation({
-                lat: selectedCityData.lat,
-                lon: selectedCityData.lon,
-                country: values.country,
-                city: values.city,
-                disease: values.healthConditions || ''
-            });
+          setManualLocation({
+            lat: selectedCityData.lat,
+            lon: selectedCityData.lon,
+            country: values.country,
+            city: values.city,
+            disease: values.healthConditions || ''
+          });
         }
         
         toast({
-            title: 'Profile Updated',
-            description: 'Your information has been saved successfully.',
+          title: 'Profile Updated',
+          description: 'Your information has been saved successfully.',
         });
       })
-      .catch((error) => {
+      .catch(() => {
         const permissionError = new FirestorePermissionError({
-            path: userRef.path,
-            operation: 'write',
-            requestResourceData: userData,
+          path: userRef.path,
+          operation: 'write',
+          requestResourceData: userData,
         });
         errorEmitter.emit('permission-error', permissionError);
       })
@@ -122,23 +122,23 @@ export default function ProfilePage() {
         setIsLoading(false);
       });
   }
-  
+
   if (isUserLoading || !location) {
     return (
-       <div className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
-         <Skeleton className="h-10 w-48" />
-         <Skeleton className="h-6 w-80" />
-         <Card>
-            <CardHeader><Skeleton className="h-8 w-1/3" /></CardHeader>
-            <CardContent className="space-y-6">
-                <Skeleton className="h-10 w-full" />
-                <Skeleton className="h-10 w-full" />
-                <Skeleton className="h-10 w-full" />
-                <Skeleton className="h-10 w-24" />
-            </CardContent>
-         </Card>
-       </div>
-    )
+      <div className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
+        <Skeleton className="h-10 w-48" />
+        <Skeleton className="h-6 w-80" />
+        <Card>
+          <CardHeader><Skeleton className="h-8 w-1/3" /></CardHeader>
+          <CardContent className="space-y-6">
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-24" />
+          </CardContent>
+        </Card>
+      </div>
+    );
   }
 
   return (
@@ -207,7 +207,7 @@ export default function ProfilePage() {
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select a city" />
-                        </TriggerTrigger>
+                        </SelectTrigger>
                       </FormControl>
                       <SelectContent>
                         {cities.map((city) => (

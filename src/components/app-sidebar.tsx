@@ -2,7 +2,6 @@
 
 import {
   SidebarContent,
-  Sidebar,
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
@@ -33,7 +32,6 @@ import Link from 'next/link';
 import { useFirebase } from '@/firebase';
 import { useRouter } from 'next/navigation';
 import { Button } from './ui/button';
-import { useState } from 'react';
 import {
   Collapsible,
   CollapsibleContent,
@@ -79,13 +77,12 @@ const communityNav = [
     href: '/community/data',
     icon: Database,
   },
-]
+];
 
 export default function AppSidebar() {
   const pathname = usePathname();
   const { auth } = useFirebase();
   const router = useRouter();
-  const [open, setOpen] = useState(false);
 
   const handleLogout = () => {
     auth.signOut().then(() => {
@@ -117,39 +114,39 @@ export default function AppSidebar() {
               </Link>
             </SidebarMenuItem>
           ))}
-           <Collapsible>
-              <CollapsibleTrigger asChild>
-                 <SidebarMenuButton icon={<Users />}>
-                  Community
-                </SidebarMenuButton>
-              </CollapsibleTrigger>
-              <CollapsibleContent>
-                <SidebarMenuSub>
-                  {communityNav.map((item) => (
-                     <SidebarMenuSubItem key={item.title}>
-                        <Link href={item.href}>
-                          <SidebarMenuSubButton isActive={pathname === item.href} icon={<item.icon />}>
-                            {item.title}
-                          </SidebarMenuSubButton>
-                        </Link>
-                     </SidebarMenuSubItem>
-                  ))}
-                </SidebarMenuSub>
-              </CollapsibleContent>
-            </Collapsible>
-             <SidebarMenuItem>
-                <Link href="/profile">
-                    <SidebarMenuButton isActive={pathname === "/profile"} icon={<User />}>
-                        Profile
-                    </SidebarMenuButton>
-                </Link>
-             </SidebarMenuItem>
+          <Collapsible>
+            <CollapsibleTrigger asChild>
+              <SidebarMenuButton icon={<Users />}>
+                Community
+              </SidebarMenuButton>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="data-[state=closed]:animate-none">
+              <SidebarMenuSub>
+                {communityNav.map((item) => (
+                  <SidebarMenuSubItem key={item.title}>
+                    <Link href={item.href}>
+                      <SidebarMenuSubButton isActive={pathname === item.href} icon={<item.icon />}>
+                        {item.title}
+                      </SidebarMenuSubButton>
+                    </Link>
+                  </SidebarMenuSubItem>
+                ))}
+              </SidebarMenuSub>
+            </CollapsibleContent>
+          </Collapsible>
+          <SidebarMenuItem>
+            <Link href="/profile">
+              <SidebarMenuButton isActive={pathname === "/profile"} icon={<User />}>
+                Profile
+              </SidebarMenuButton>
+            </Link>
+          </SidebarMenuItem>
         </SidebarMenu>
       </SidebarContent>
       <SidebarFooter className="flex items-center justify-between">
         <ThemeToggle />
-         <Button variant="ghost" size="icon" onClick={handleLogout}>
-            <LogOut />
+        <Button variant="ghost" size="icon" onClick={handleLogout}>
+          <LogOut />
         </Button>
         <SidebarTrigger>
           <ChevronsLeft />
