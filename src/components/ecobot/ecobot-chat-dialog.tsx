@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef, FormEvent } from 'react';
 import { askEcoBot } from '@/app/actions/ask-ecobot';
 import { useLocation } from '@/hooks/use-location';
-import { useUser, useCollection, useMemoFirebase } from '@/firebase';
+import { useFirebase, useUser, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, orderBy, limit } from 'firebase/firestore';
 import {
   Dialog,
@@ -32,7 +32,8 @@ export function EcoBotChatDialog({
   onOpenChange,
 }: EcoBotChatDialogProps) {
   const { location } = useLocation();
-  const { user, firestore } = useUser();
+  const { user } = useUser();
+  const { firestore } = useFirebase();
   const [messages, setMessages] = useState<CoreMessage[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -40,7 +41,7 @@ export function EcoBotChatDialog({
 
   const chatHistoryQuery = useMemoFirebase(
     () =>
-      user
+      user && firestore
         ? query(
             collection(firestore, `users/${user.uid}/chatHistory`),
             orderBy('timestamp', 'desc'),
