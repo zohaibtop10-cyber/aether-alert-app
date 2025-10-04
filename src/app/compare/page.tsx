@@ -81,10 +81,10 @@ export default function ComparePage() {
                 const beforeRes = await fetch(beforeUrl, { method: 'HEAD' });
 
                 if (!afterRes.ok || !beforeRes.ok) {
-                   // Don't throw an error, just log it and let the catch block handle the retry
-                   console.warn("Imagery not available for this specific date and location. Retrying.");
-                   // Trigger the catch block to retry
-                   throw new Error("Imagery not available for this specific date and location.");
+                   // This is not a critical error, just a location without imagery.
+                   // Silently try another location.
+                   handleNewRandomLocation();
+                   return;
                 }
 
                 setAfterImageUrl(afterUrl);
@@ -100,8 +100,8 @@ export default function ComparePage() {
 
 
             } catch (e: any) {
-                console.error("Error during image comparison generation:", e.message);
-                setImageError(e.message || "Failed to load imagery. The location might be in an area with sparse coverage (e.g., open ocean).");
+                // This will catch actual network errors etc.
+                setImageError("Failed to fetch imagery due to a network issue. Retrying with a new location.");
                 // Automatically try a new location
                 handleNewRandomLocation();
             }
