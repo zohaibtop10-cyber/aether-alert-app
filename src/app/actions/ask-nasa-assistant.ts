@@ -3,7 +3,13 @@
 import type { Location } from '@/lib/types';
 
 export async function askNasaAssistant(query: string, location: Location): Promise<string> {
-    const webhookUrl = 'https://hook.eu2.make.com/c4kv5562lwjcx4tdo6whxevjwphr3orh';
+    const webhookUrl = process.env.MAKE_WEBHOOK_URL;
+
+    if (!webhookUrl) {
+        const errorMessage = "Sorry, the AI assistant is not configured. The webhook URL is missing.";
+        console.error(errorMessage);
+        return errorMessage;
+    }
 
     try {
         const response = await fetch(webhookUrl, {
