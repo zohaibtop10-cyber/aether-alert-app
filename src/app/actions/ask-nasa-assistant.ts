@@ -3,7 +3,7 @@
 import type { Location } from '@/lib/types';
 
 export async function askNasaAssistant(query: string, location: Location): Promise<string> {
-    const webhookUrl = 'https://hook.eu2.make.com/cuo0js5kd4m29mpai6yiikap5yvoasum';
+    const webhookUrl = 'https://hook.eu2.make.com/c4kv5562lwjcx4tdo6whxevjwphr3orh';
 
     try {
         const response = await fetch(webhookUrl, {
