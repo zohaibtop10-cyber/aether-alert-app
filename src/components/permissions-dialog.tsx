@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button';
 import { useLocation } from '@/hooks/use-location';
 import { useToast } from '@/hooks/use-toast';
 import { Bell, MapPin } from 'lucide-react';
+import { useState } from 'react';
 
 interface PermissionsDialogProps {
   open: boolean;
@@ -23,24 +24,34 @@ interface PermissionsDialogProps {
 export function PermissionsDialog({ open, onOpenChange, onDialogClose }: PermissionsDialogProps) {
   const { requestLocation } = useLocation();
   const { toast } = useToast();
+  const [step, setStep] = useState<'location' | 'notifications' | 'done'>('location');
 
-  const handleAllow = async () => {
-    // Request location
+  const handleLocationRequest = () => {
     requestLocation();
-
-    // Request notifications
-    if ('Notification' in window) {
+    // Move to next step regardless of outcome, user can change in settings.
+    setStep('notifications');
+  };
+  
+  const handleNotificationRequest = async () => {
+     if ('Notification' in window) {
+      if (Notification.permission === 'granted') {
+        onDialogClose();
+        return;
+      }
+      if (Notification.permission === 'denied') {
+        toast({
+          variant: 'destructive',
+          title: 'Notifications Blocked',
+          description: 'To enable alerts, please update your browser settings.',
+        });
+        onDialogClose();
+        return;
+      }
       const permission = await Notification.requestPermission();
       if (permission === 'granted') {
         toast({
           title: 'Notifications Enabled',
           description: 'You will now receive climate alerts.',
-        });
-      } else if (permission === 'denied') {
-        toast({
-          variant: 'destructive',
-          title: 'Notifications Blocked',
-          description: 'To enable alerts, please update your browser settings.',
         });
       }
     }
@@ -50,38 +61,59 @@ export function PermissionsDialog({ open, onOpenChange, onDialogClose }: Permiss
   const handleSkip = () => {
     onDialogClose();
   };
+  
+  const renderStepContent = () => {
+    switch (step) {
+      case 'location':
+        return (
+          <>
+            <DialogHeader>
+              <DialogTitle>Allow Location Access?</DialogTitle>
+              <DialogDescription>
+                Get hyper-local weather, air quality, and environmental data for your exact location. Your data is kept private.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="flex items-center justify-center py-4">
+                <MapPin className="h-12 w-12 text-primary" />
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setStep('notifications')}>
+                Skip
+              </Button>
+              <Button onClick={handleLocationRequest}>Allow Location</Button>
+            </DialogFooter>
+          </>
+        );
+    case 'notifications':
+        return (
+             <>
+                <DialogHeader>
+                <DialogTitle>Enable Push Notifications?</DialogTitle>
+                <DialogDescription>
+                    Receive critical alerts for severe weather warnings, high pollution levels, and other urgent events.
+                </DialogDescription>
+                </DialogHeader>
+                 <div className="flex items-center justify-center py-4">
+                    <Bell className="h-12 w-12 text-primary" />
+                </div>
+                <DialogFooter>
+                <Button variant="outline" onClick={handleSkip}>
+                    Maybe Later
+                </Button>
+                <Button onClick={handleNotificationRequest}>Enable Notifications</Button>
+                </DialogFooter>
+            </>
+        );
+        default:
+            return null;
+    }
+  }
+
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
-        <DialogHeader>
-          <DialogTitle>Enhance Your Experience</DialogTitle>
-          <DialogDescription>
-            Allow location and notification access for personalized weather data and real-time alerts. Your data is kept private.
-          </DialogDescription>
-        </DialogHeader>
-        <div className="grid gap-4 py-4">
-          <div className="flex items-start gap-4">
-            <MapPin className="h-6 w-6 text-primary mt-1" />
-            <div>
-              <h3 className="font-semibold">Location Access</h3>
-              <p className="text-sm text-muted-foreground">Get hyper-local weather, air quality, and environmental data for your exact location.</p>
-            </div>
-          </div>
-           <div className="flex items-start gap-4">
-            <Bell className="h-6 w-6 text-primary mt-1" />
-            <div>
-              <h3 className="font-semibold">Push Notifications</h3>
-              <p className="text-sm text-muted-foreground">Receive critical alerts for severe weather warnings, high pollution levels, and other urgent events.</p>
-            </div>
-          </div>
-        </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={handleSkip}>
-            Skip for Now
-          </Button>
-          <Button onClick={handleAllow}>Allow Access</Button>
-        </DialogFooter>
+        {renderStepContent()}
       </DialogContent>
     </Dialog>
   );
