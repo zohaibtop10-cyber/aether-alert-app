@@ -32,7 +32,7 @@ type SidebarContext = {
   setOpen: (open: boolean) => void
   openMobile: boolean
   setOpenMobile: (open: boolean) => void
-  isMobile: boolean
+  isMobile: boolean | undefined
   toggleSidebar: () => void
 }
 
@@ -91,10 +91,13 @@ const SidebarProvider = React.forwardRef<
 
     // Helper to toggle the sidebar.
     const toggleSidebar = React.useCallback(() => {
-      return isMobile
-        ? setOpenMobile((open) => !open)
-        : setOpen((open) => !open)
-    }, [isMobile, setOpen, setOpenMobile])
+        if (isMobile) {
+            setOpenMobile((prev) => !prev);
+        } else {
+            setOpen((prev) => !prev);
+        }
+    }, [isMobile, setOpen, setOpenMobile]);
+
 
     // Adds a keyboard shortcut to toggle the sidebar.
     React.useEffect(() => {
@@ -176,6 +179,10 @@ const Sidebar = React.forwardRef<
     ref
   ) => {
     const { isMobile, state, openMobile, setOpenMobile } = useSidebar()
+    
+    if (isMobile === undefined) {
+      return null; // Don't render anything on the server or during initial client render
+    }
 
     if (collapsible === "none") {
       return (
@@ -586,7 +593,7 @@ const SidebarMenuButton = React.forwardRef<
         <TooltipContent
           side="right"
           align="center"
-          hidden={state !== "collapsed" || isMobile}
+          hidden={state !== "collapsed" || !!isMobile}
           {...tooltip}
         />
       </Tooltip>
