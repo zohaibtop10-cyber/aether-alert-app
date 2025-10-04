@@ -17,7 +17,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Bot, Send, User, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback } from '../ui/avatar';
-import { type CoreMessage } from 'genkit/ai';
+import { type CoreMessage } from '@genkit-ai/ai/message';
 import { nanoid } from 'nanoid';
 import { readStreamableValue } from 'ai/rsc';
 
@@ -68,15 +68,17 @@ export function EcoBotChatDialog({
         role: 'model',
         content: [{ text: '' }],
       };
-      const messageId = nanoid();
-      setMessages((prev) => [...prev, { ...modelMessage, id: messageId }]);
+      // @ts-ignore
+      modelMessage.id = nanoid();
+      setMessages((prev) => [...prev, modelMessage]);
 
       for await (const chunk of readStreamableValue(stream)) {
         if (chunk) {
           fullResponse += chunk;
           setMessages((prev) =>
             prev.map((msg) =>
-              msg.id === messageId
+              // @ts-ignore
+              msg.id === modelMessage.id
                 ? {
                     ...msg,
                     content: [{ text: fullResponse }],

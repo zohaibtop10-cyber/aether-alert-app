@@ -1,7 +1,8 @@
 'use server';
 
 import { ecoBot } from '@/ai/flows/eco-bot';
-import { CoreMessage, streamText } from 'genkit/ai';
+import { streamText } from '@genkit-ai/ai';
+import { CoreMessage } from '@genkit-ai/ai/message';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { initializeFirebase } from '@/firebase';
 import { createStreamableValue } from 'ai/rsc';
