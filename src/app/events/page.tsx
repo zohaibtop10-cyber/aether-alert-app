@@ -1,5 +1,3 @@
-
-
 'use client';
 
 import {
@@ -34,9 +32,10 @@ function EventCard({ event }: { event: ClimateEvent }) {
 
   const getIcon = (type: string) => {
     switch(type) {
-      case 'Air Quality': return <Wind className="mr-2 h-4 w-4 mt-1 shrink-0" />;
-      case 'Rainfall': return <Droplets className="mr-2 h-4 w-4 mt-1 shrink-0" />;
-      case 'Temperature': return <Thermometer className="mr-2 h-4 w-4 mt-1 shrink-0" />;
+      case 'Air Pollution Event': return <Wind className="mr-2 h-4 w-4 mt-1 shrink-0" />;
+      case 'Heavy Rainfall': return <Droplets className="mr-2 h-4 w-4 mt-1 shrink-0" />;
+      case 'Heat Wave Warning': return <Thermometer className="mr-2 h-4 w-4 mt-1 shrink-0" />;
+      case 'High Wind Alert': return <Wind className="mr-2 h-4 w-4 mt-1 shrink-0" />;
       default: return <AlertTriangle className="mr-2 h-4 w-4 mt-1 shrink-0" />;
     }
   }
@@ -54,7 +53,7 @@ function EventCard({ event }: { event: ClimateEvent }) {
       </CardHeader>
       <CardContent className="space-y-3 flex-grow">
         <div className="flex items-start text-sm text-muted-foreground">
-          {getIcon(event.type)}
+          {getIcon(event.title)}
           <span>{event.type}</span>
         </div>
         <div className="flex items-start text-sm text-muted-foreground">
@@ -129,8 +128,8 @@ export default function EventsPage() {
     today.setHours(0, 0, 0, 0); // Normalize today to the beginning of the day
     const e = parseISO(eventDate);
 
-    if (e < subDays(today, 1) && e >= subDays(today, 7)) return 'past';
-    if (e >= subDays(today, 0) && e < addDays(today, 1)) return 'ongoing';
+    if (e >= subDays(today, 7) && e < today) return 'past';
+    if (e >= today && e < addDays(today, 1)) return 'ongoing';
     if (e >= addDays(today, 1) && e <= addDays(today, 7)) return 'upcoming';
     
     return null; // Return null if outside the -7 to +7 day range
