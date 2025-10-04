@@ -24,18 +24,21 @@ export async function askNasaAssistant(query: string, location: Location): Promi
             throw new Error(`The webhook request failed: ${response.statusText}`);
         }
 
-        // Assuming make.com returns a JSON object with an "answer" key.
-        const result = await response.json();
+        const responseText = await response.text();
         
-        if (result && result.answer) {
-             return result.answer;
-        } else {
-             // If the response is just a string, return it directly.
-             if (typeof result === 'string') {
-                return result;
-             }
-             return "I received a response, but couldn't find an answer. The raw response was: " + JSON.stringify(result);
+        try {
+            // First, try to parse as JSON, as this is a common webhook response format.
+            const result = JSON.parse(responseText);
+            if (result && result.answer) {
+                 return result.answer;
+            }
+        } catch (e) {
+            // If JSON parsing fails, assume the response is a plain string.
+            return responseText;
         }
+
+        // If it was valid JSON but didn't have an 'answer' key, return the raw JSON string.
+        return `I received a response, but couldn\'t find a direct answer. The raw response was: ${responseText}`;
 
     } catch (error) {
         console.error("Error calling AI assistant webhook:", error);
