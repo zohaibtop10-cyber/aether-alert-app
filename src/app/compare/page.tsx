@@ -110,6 +110,7 @@ export default function ComparePage() {
     }
 
     useEffect(() => {
+        // This effect runs only once on the client after hydration
         handleNewRandomLocation();
     }, []);
     

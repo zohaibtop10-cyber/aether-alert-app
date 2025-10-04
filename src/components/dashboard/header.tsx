@@ -1,6 +1,6 @@
 'use client';
 
-import { AirVent, LocateIcon, MapPin, Menu, User } from 'lucide-react';
+import { AirVent, LocateIcon, MapPin, Menu } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { Button } from '../ui/button';
 import { useLocation } from '@/hooks/use-location';
