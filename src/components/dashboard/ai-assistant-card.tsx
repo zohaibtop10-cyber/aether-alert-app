@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Bot, User, Send, Loader2 } from 'lucide-react';
@@ -34,7 +33,7 @@ export function AIAssistantCard() {
         {
           id: nanoid(),
           role: 'assistant',
-          text: "Hello! I'm your NASA data assistant. Ask me about historical weather trends, like 'What was the temperature trend over the last week?' or 'Compare rainfall in the last 7 and 30 days.'",
+          text: "Hello! I'm your environmental data assistant. Ask me about current weather or historical trends, like 'What's the forecast for tomorrow?' or 'Compare rainfall in the last 7 and 30 days.'",
         }
       ]);
     }
@@ -73,7 +72,7 @@ export function AIAssistantCard() {
 
   return (
     <div className="flex flex-col h-[60vh]">
-      <CardContent className="flex-1 overflow-y-auto space-y-4 pr-6 pl-6 border-t py-4">
+      <div className="flex-1 overflow-y-auto space-y-4 p-6 border-t">
         {messages.map((msg) => (
           <div key={msg.id} className={`flex items-start gap-3 ${msg.role === 'user' ? 'justify-end' : ''}`}>
             {msg.role === 'assistant' && (
@@ -82,7 +81,7 @@ export function AIAssistantCard() {
               </div>
             )}
             <div
-              className={`max-w-[75%] rounded-lg p-3 text-sm ${
+              className={`max-w-[80%] rounded-lg p-3 text-sm whitespace-pre-wrap ${
                 msg.role === 'user'
                   ? 'bg-primary text-primary-foreground'
                   : 'bg-muted'
@@ -108,13 +107,13 @@ export function AIAssistantCard() {
             </div>
         )}
         <div ref={messagesEndRef} />
-      </CardContent>
-      <CardFooter className="p-6 pt-4 border-t">
+      </div>
+      <div className="p-6 pt-4 border-t">
         <form onSubmit={handleSubmit} className="flex w-full items-center space-x-2">
           <Input
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Ask about historical data..."
+            placeholder="Ask about weather or historical data..."
             disabled={isLoading || !location}
           />
           <Button type="submit" size="icon" disabled={isLoading || !input.trim() || !location}>
@@ -122,7 +121,7 @@ export function AIAssistantCard() {
             <span className="sr-only">Send</span>
           </Button>
         </form>
-      </CardFooter>
+      </div>
     </div>
   );
 }
