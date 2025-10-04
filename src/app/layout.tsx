@@ -7,6 +7,7 @@ import { FirebaseClientProvider } from '@/firebase';
 import { Sidebar, SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
 import AppSidebar from '@/components/app-sidebar';
 import { EcoBotChatWidget } from '@/components/ecobot/ecobot-chat-widget';
+import Header from '@/components/dashboard/header';
 
 export const metadata: Metadata = {
   title: 'Aether Alert',
@@ -37,7 +38,12 @@ export default function RootLayout({
                   <AppSidebar />
                 </Sidebar>
                 <SidebarInset>
-                    {children}
+                    <div className="flex flex-col h-screen">
+                        <Header />
+                        <main className="flex-1 overflow-y-auto">
+                            {children}
+                        </main>
+                    </div>
                 </SidebarInset>
                 <EcoBotChatWidget />
               </SidebarProvider>

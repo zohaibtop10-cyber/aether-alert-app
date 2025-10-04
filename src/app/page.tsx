@@ -3,7 +3,6 @@
 import { useState, useEffect, useTransition, Suspense } from 'react';
 import { useUser } from '@/firebase';
 import { useRouter } from 'next/navigation';
-import Header from '@/components/dashboard/header';
 import { InfoCard } from '@/components/dashboard/info-card';
 import { AirQualityCard } from '@/components/dashboard/air-quality-card';
 import { ForecastTabs } from '@/components/dashboard/forecast-tabs';
@@ -96,10 +95,8 @@ function DashboardPage() {
   const isLoading = isLocating || isPending;
 
   return (
-    <div className="flex min-h-screen w-full flex-col bg-background text-foreground">
+    <div className="flex flex-1 flex-col gap-6 p-4 md:p-6 lg:p-8">
       <PermissionsDialog open={showPermissionsDialog} onOpenChange={setShowPermissionsDialog} onDialogClose={handlePermissionsDialogClose} />
-      <Header />
-      <main className="flex flex-1 flex-col gap-6 p-4 md:p-6 lg:p-8">
         {error && (
           <Card className="bg-destructive text-destructive-foreground">
             <CardHeader>
@@ -184,7 +181,6 @@ function DashboardPage() {
           data30d={historicalData30d}
           isLoading={isLoading}
         />
-      </main>
     </div>
   );
 }
