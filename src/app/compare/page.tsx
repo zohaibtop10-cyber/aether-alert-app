@@ -63,9 +63,7 @@ export default function ComparePage() {
     // GIBS data might have a delay of a day or two
     const recentDate = new Date(new Date().setDate(new Date().getDate() - 2)); 
 
-    const generateComparison = async (loc: {lat: number, lon: number} | null) => {
-        if (!loc) return;
-        
+    const generateComparison = (loc: {lat: number, lon: number}) => {
         startTransition(async () => {
             setImageError(null);
             setBeforeImageUrl(null);
@@ -83,7 +81,10 @@ export default function ComparePage() {
                 const beforeRes = await fetch(beforeUrl, { method: 'HEAD' });
 
                 if (!afterRes.ok || !beforeRes.ok) {
-                    throw new Error("Imagery not available for this specific date and location.");
+                   // Don't throw an error, just log it and let the catch block handle the retry
+                   console.warn("Imagery not available for this specific date and location. Retrying.");
+                   // Trigger the catch block to retry
+                   throw new Error("Imagery not available for this specific date and location.");
                 }
 
                 setAfterImageUrl(afterUrl);
@@ -99,9 +100,10 @@ export default function ComparePage() {
 
 
             } catch (e: any) {
-                console.error("Error generating image URLs:", e);
+                console.error("Error during image comparison generation:", e.message);
                 setImageError(e.message || "Failed to load imagery. The location might be in an area with sparse coverage (e.g., open ocean).");
-                handleNewRandomLocation(); // Try a new location automatically
+                // Automatically try a new location
+                handleNewRandomLocation();
             }
         });
     }
@@ -125,7 +127,7 @@ export default function ComparePage() {
 
 
     const renderContent = () => {
-        if (isPending || (!beforeImageUrl && !afterImageUrl)) {
+        if (isPending || (!beforeImageUrl && !afterImageUrl && !imageError)) {
             return (
                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <Card>
@@ -150,14 +152,22 @@ export default function ComparePage() {
             )
         }
 
-        if (imageError || !beforeImageUrl || !afterImageUrl || !beforeDate) {
-            // This state should be rare now, but kept as a fallback.
+        if (imageError && !beforeImageUrl) {
             return (
                 <div className="flex flex-col items-center justify-center text-center gap-4 text-muted-foreground min-h-[400px]">
                     <AlertTriangle className="h-12 w-12" />
                     <p className="font-semibold">Could not load satellite imagery.</p>
                     <p className="text-sm max-w-md">{imageError}</p>
-                    <p className="text-xs">Attempting to find a new location...</p>
+                    <p className="text-xs">Finding a new location...</p>
+                </div>
+            );
+        }
+
+        if (!beforeImageUrl || !afterImageUrl || !beforeDate) {
+             return (
+                <div className="flex flex-col items-center justify-center text-center gap-4 text-muted-foreground min-h-[400px]">
+                    <Globe className="h-12 w-12 animate-spin" />
+                    <p className="font-semibold">Fetching a random location...</p>
                 </div>
             );
         }
