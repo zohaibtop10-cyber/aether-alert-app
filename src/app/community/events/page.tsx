@@ -10,49 +10,83 @@ import {
 } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { useState, useEffect, useMemo } from 'react';
-import { CalendarIcon, MapPin, Search, ExternalLink } from 'lucide-react';
+import { CalendarIcon, MapPin, Search, ExternalLink, AlertTriangle, Wind, Droplets, Thermometer } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { format, formatDistanceToNow, addDays, subDays, isWithinInterval, isToday } from 'date-fns';
-import { Separator } from '@/components/ui/separator';
+import { format, formatDistanceToNow, addDays, subDays, isWithinInterval, isToday, parseISO } from 'date-fns';
 import { Input } from '@/components/ui/input';
-import { getNasaEvents, AppEvent } from '@/app/actions/get-nasa-events';
-import Link from 'next/link';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { generateClimateEvents, type ClimateEvent } from '@/app/actions/generate-climate-events';
+import { useLocation } from '@/hooks/use-location';
+import { Badge } from '@/components/ui/badge';
 
-function EventList({ events }: { events: AppEvent[] }) {
+
+function EventCard({ event }: { event: ClimateEvent }) {
+  const getSeverityBadge = (severity: string) => {
+    switch (severity?.toLowerCase()) {
+      case 'high': return 'destructive';
+      case 'moderate': return 'secondary';
+      default: return 'outline';
+    }
+  }
+
+  const getIcon = (type: string) => {
+    switch(type) {
+      case 'Air Quality': return <Wind className="mr-2 h-4 w-4 mt-1 shrink-0" />;
+      case 'Rainfall': return <Droplets className="mr-2 h-4 w-4 mt-1 shrink-0" />;
+      case 'Temperature': return <Thermometer className="mr-2 h-4 w-4 mt-1 shrink-0" />;
+      default: return <AlertTriangle className="mr-2 h-4 w-4 mt-1 shrink-0" />;
+    }
+  }
+
+  return (
+    <Card className="flex flex-col">
+      <CardHeader>
+        <div className="flex justify-between items-start">
+          <CardTitle className="line-clamp-2">{event.title}</CardTitle>
+          <Badge variant={getSeverityBadge(event.severity)}>{event.severity}</Badge>
+        </div>
+        <CardDescription>
+          Source: {event.source}
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-3 flex-grow">
+        <div className="flex items-start text-sm text-muted-foreground">
+          {getIcon(event.type)}
+          <span>{event.type}</span>
+        </div>
+        <div className="flex items-start text-sm text-muted-foreground">
+          <CalendarIcon className="mr-2 h-4 w-4 mt-1 shrink-0" />
+          <span>{event.date ? format(parseISO(event.date), 'PPP') : 'Date not set'}</span>
+        </div>
+        <div className="flex items-start text-sm text-muted-foreground">
+          <MapPin className="mr-2 h-4 w-4 mt-1 shrink-0" />
+          <span className="line-clamp-2">{event.location}</span>
+        </div>
+        <p className="line-clamp-4 text-sm">{event.description}</p>
+      </CardContent>
+      <CardFooter>
+        <p className="text-xs text-muted-foreground">
+            Reported {event.date ? formatDistanceToNow(parseISO(event.date), { addSuffix: true }) : 'just now'}
+        </p>
+      </CardFooter>
+    </Card>
+  );
+}
+
+
+function EventList({ events }: { events: ClimateEvent[] }) {
     if (events.length === 0) {
-        return <p className="text-muted-foreground text-center py-4">No events in this category.</p>;
+        return (
+          <div className="text-center text-muted-foreground py-12">
+            <p className="font-semibold text-lg">✅ No Major Climate Events Detected</p>
+            <p>Conditions are currently stable in your selected area for this period.</p>
+          </div>
+        );
     }
     return (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
              {events.map(event => (
-                <Card key={event.id} className="flex flex-col">
-                    <CardHeader>
-                        <CardTitle className="line-clamp-2">{event.title}</CardTitle>
-                        <CardDescription>
-                            Source: {event.organizerName}
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-3 flex-grow">
-                        <div className="flex items-start text-sm text-muted-foreground">
-                            <CalendarIcon className="mr-2 h-4 w-4 mt-1 shrink-0" />
-                            <span>{event.date ? format(event.date, 'PPP') : 'Date not set'}</span>
-                        </div>
-                        <div className="flex items-start text-sm text-muted-foreground">
-                            <MapPin className="mr-2 h-4 w-4 mt-1 shrink-0" />
-                            <span className="line-clamp-2">{event.location}</span>
-                        </div>
-                        <p className="line-clamp-4 text-sm">{event.description}</p>
-                    </CardContent>
-                    <CardFooter className="flex justify-between items-center">
-                         <p className="text-xs text-muted-foreground">
-                            Reported {event.createdAt ? formatDistanceToNow(event.createdAt, { addSuffix: true }) : 'just now'}
-                        </p>
-                        <Link href={event.link} target="_blank" rel="noopener noreferrer" className="flex items-center text-xs text-primary hover:underline">
-                            More Info <ExternalLink className="ml-1 h-3 w-3" />
-                        </Link>
-                    </CardFooter>
-                </Card>
+                <EventCard key={event.id} event={event} />
             ))}
         </div>
     )
@@ -60,55 +94,76 @@ function EventList({ events }: { events: AppEvent[] }) {
 
 export default function EventsPage() {
   const [searchQuery, setSearchQuery] = useState('');
-  const [events, setEvents] = useState<AppEvent[]>([]);
+  const [events, setEvents] = useState<ClimateEvent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+  const { location, isLocating, error: locationError } = useLocation();
 
   useEffect(() => {
     async function loadEvents() {
+        if (!location) return;
+
         setIsLoading(true);
         try {
-            const nasaEvents = await getNasaEvents();
-            setEvents(nasaEvents);
+            const climateEvents = await generateClimateEvents(location);
+            setEvents(climateEvents);
         } catch(e) {
+            console.error(e);
             toast({
                 variant: 'destructive',
-                title: 'Error fetching events',
-                description: 'Could not load natural event data from NASA.'
+                title: 'Error generating events',
+                description: 'Could not analyze and generate climate events.'
             })
         } finally {
             setIsLoading(false);
         }
     }
     loadEvents();
-  }, [toast]);
+  }, [location, toast]);
+
+  const classifyEventDate = (eventDate: string) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Normalize today to the beginning of the day
+    const e = parseISO(eventDate);
+
+    if (e < subDays(today, 1) && e >= subDays(today, 7)) return 'past';
+    if (e >= subDays(today, 0) && e < addDays(today, 1)) return 'ongoing';
+    if (e >= addDays(today, 1) && e <= addDays(today, 7)) return 'upcoming';
+    
+    return null; // Return null if outside the -7 to +7 day range
+  };
+
 
   const { pastEvents, ongoingEvents, upcomingEvents } = useMemo(() => {
     if (!events) return { pastEvents: [], ongoingEvents: [], upcomingEvents: [] };
 
     const filtered = events.filter(event =>
-        event.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        event.location.toLowerCase().includes(searchQuery.toLowerCase())
+        (event.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        event.location.toLowerCase().includes(searchQuery.toLowerCase()))
     );
 
-    const now = new Date();
-    const past = filtered.filter(event => 
-        isWithinInterval(event.date, { start: subDays(now, 7), end: subDays(now, 1) })
-    ).sort((a,b) => b.date.getTime() - a.date.getTime());
+    const past: ClimateEvent[] = [];
+    const ongoing: ClimateEvent[] = [];
+    const upcoming: ClimateEvent[] = [];
 
-    const ongoing = filtered.filter(event => isToday(event.date));
-    
-    const upcoming = filtered.filter(event => 
-        isWithinInterval(event.date, { start: addDays(now, 1), end: addDays(now, 7) })
-    ).sort((a,b) => a.date.getTime() - b.date.getTime());
+    filtered.forEach(event => {
+        const category = classifyEventDate(event.date);
+        if (category === 'past') past.push(event);
+        else if (category === 'ongoing') ongoing.push(event);
+        else if (category === 'upcoming') upcoming.push(event);
+    });
 
-    return { pastEvents: past, ongoingEvents: ongoing, upcomingEvents: upcoming };
+    return { 
+      pastEvents: past.sort((a,b) => parseISO(b.date).getTime() - parseISO(a.date).getTime()), 
+      ongoingEvents: ongoing, 
+      upcomingEvents: upcoming.sort((a,b) => parseISO(a.date).getTime() - parseISO(b.date).getTime()) 
+    };
   }, [events, searchQuery]);
-
+  
   const noResults = !isLoading && !pastEvents.length && !ongoingEvents.length && !upcomingEvents.length;
 
   const renderContent = () => {
-    if (isLoading) {
+    if (isLoading || isLocating) {
         return (
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                 {Array.from({ length: 6 }).map((_, i) => (
@@ -131,13 +186,14 @@ export default function EventsPage() {
         )
     }
 
-    if (noResults) {
-        return (
-            <div className="text-center text-muted-foreground py-12">
-               <p>No events found.</p>
-               <p className="text-sm">{searchQuery ? `Try adjusting your filter.` : 'There are no NASA events in the selected timeframes.'}</p>
-            </div>
-        )
+     if (locationError) {
+      return (
+        <div className="text-center text-destructive py-12">
+          <AlertTriangle className="mx-auto h-12 w-12" />
+          <p className="mt-4 font-semibold">Could not load location</p>
+          <p className="text-sm">{locationError}</p>
+        </div>
+      );
     }
     
     return (
@@ -165,9 +221,9 @@ export default function EventsPage() {
     <div className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="font-semibold text-3xl">Natural Events Tracker</h1>
+          <h1 className="font-semibold text-3xl">Climate Events Dashboard</h1>
           <p className="text-muted-foreground">
-            Explore recent and ongoing natural events from NASA&apos;s EONET.
+            AI-generated events based on environmental data for your location.
           </p>
         </div>
       </div>

@@ -22,7 +22,6 @@ import {
   ChevronsLeft,
   Users,
   GitCompare,
-  MessageSquare,
 } from 'lucide-react';
 import { ThemeToggle } from './theme-toggle';
 import { usePathname } from 'next/navigation';
@@ -67,7 +66,6 @@ const communityNav = [
   {
     title: 'Posts',
     href: '/community/posts',
-    icon: MessageSquare,
   },
 ];
 
@@ -96,20 +94,23 @@ export default function AppSidebar() {
         <SidebarMenu>
           {sidebarNav.map((item) => (
             <SidebarMenuItem key={item.title}>
-              <SidebarMenuButton asChild isActive={pathname === item.href}>
+              <SidebarMenuButton
+                asChild
+                isActive={pathname === item.href}
+              >
                 <Link href={item.href}>
                   <item.icon />
-                  {item.title}
+                  <span>{item.title}</span>
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
           ))}
           <Collapsible>
             <CollapsibleTrigger asChild>
-              <SidebarMenuButton>
-                <Users />
-                <span className="group-data-[collapsible=icon]:hidden">Community</span>
-              </SidebarMenuButton>
+                <SidebarMenuButton>
+                    <Users />
+                    <span className="group-data-[collapsible=icon]:hidden">Community</span>
+                </SidebarMenuButton>
             </CollapsibleTrigger>
             <CollapsibleContent className="data-[state=closed]:animate-none">
               <SidebarMenuSub>
