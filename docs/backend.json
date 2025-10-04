@@ -78,45 +78,32 @@
       },
       "required": ["uid", "message", "createdAt"]
     },
-    "BlogPost": {
-        "title": "Blog Post",
-        "description": "A blog post created by a community member.",
-        "type": "object",
-        "properties": {
-            "title": { "type": "string" },
-            "content": { "type": "string" },
-            "authorId": { "type": "string" },
-            "authorName": { "type": "string" },
-            "createdAt": { "type": "string", "format": "date-time" }
-        },
-        "required": ["title", "content", "authorId", "createdAt"]
+    "Event": {
+      "title": "Event",
+      "description": "A community event, like a cleanup or a workshop.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "location": { "type": "string" },
+        "date": { "type": "string", "format": "date-time" },
+        "organizerId": { "type": "string" },
+        "organizerName": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "description", "location", "date", "organizerId", "createdAt"]
     },
-    "Article": {
-        "title": "Article",
-        "description": "An in-depth article or research piece by a community member.",
-        "type": "object",
-        "properties": {
-            "title": { "type": "string" },
-            "content": { "type": "string" },
-            "authorId": { "type": "string" },
-            "authorName": { "type": "string" },
-            "createdAt": { "type": "string", "format": "date-time" }
-        },
-        "required": ["title", "content", "authorId", "createdAt"]
-    },
-    "DataUpload": {
-        "title": "Data Upload",
-        "description": "A link to a dataset or data source shared by a user.",
-        "type": "object",
-        "properties": {
-            "title": { "type": "string" },
-            "description": { "type": "string" },
-            "sourceUrl": { "type": "string", "format": "uri" },
-            "uploaderId": { "type": "string" },
-            "uploaderName": { "type": "string" },
-            "createdAt": { "type": "string", "format": "date-time" }
-        },
-        "required": ["title", "description", "sourceUrl", "uploaderId", "createdAt"]
+    "Post": {
+      "title": "Post",
+      "description": "A general community post.",
+      "type": "object",
+      "properties": {
+        "content": { "type": "string" },
+        "authorId": { "type": "string" },
+        "authorName": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["content", "authorId", "createdAt"]
     }
   },
   "auth": {
@@ -135,17 +122,13 @@
       "schema": { "$ref": "#/entities/Alert" },
       "description": "Stores all alerts generated for all users."
     },
-    "/blogPosts/{postId}": {
-        "schema": { "$ref": "#/entities/BlogPost" },
-        "description": "Collection of all blog posts from the community."
+    "/events/{eventId}": {
+      "schema": { "$ref": "#/entities/Event" },
+      "description": "Collection of all community events."
     },
-    "/articles/{articleId}": {
-        "schema": { "$ref": "#/entities/Article" },
-        "description": "Collection of all articles from the community."
-    },
-    "/dataUploads/{uploadId}": {
-        "schema": { "$ref": "#/entities/DataUpload" },
-        "description": "Collection of all user-submitted data sources."
+    "/posts/{postId}": {
+      "schema": { "$ref": "#/entities/Post" },
+      "description": "Collection of all community posts."
     }
   }
 }

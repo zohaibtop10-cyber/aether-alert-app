@@ -17,7 +17,7 @@ export default function CommunityPage() {
         <CardHeader>
           <CardTitle>Welcome to the Community Hub</CardTitle>
           <CardDescription>
-            Explore blog posts, articles, and shared data from fellow climate warriors.
+            Explore events and posts from fellow climate warriors.
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col items-center justify-center text-center gap-4 min-h-[300px]">
