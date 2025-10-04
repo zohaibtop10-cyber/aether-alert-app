@@ -74,7 +74,9 @@ async function getLocationFromCoordinates(geometry: NasaEventGeometry): Promise<
 
 
 export async function getNasaEvents(): Promise<AppEvent[]> {
-    const url = 'https://eonet.gsfc.nasa.gov/api/v3/events?limit=100&status=open'; // Fetch open events
+    // EONET API provides a feed of natural events.
+    // Fetching the last 30 days of events to have a good pool for categorization.
+    const url = 'https://eonet.gsfc.nasa.gov/api/v3/events?days=30&status=all'; 
 
     try {
         const response = await fetch(url, { next: { revalidate: 3600 } }); // Cache for 1 hour
@@ -97,14 +99,15 @@ export async function getNasaEvents(): Promise<AppEvent[]> {
                     description: event.description || 'No description available.',
                     date: parseISO(latestGeometry.date),
                     location: location,
-                    organizerName: 'NASA EONET', // Source of the event
+                    organizerName: event.sources[0]?.id || 'NASA EONET', // Source of the event
                     createdAt: parseISO(latestGeometry.date), // Use event date as creation date
                     link: event.link,
                 };
             })
         );
         
-        return transformedEvents;
+        // Sort events by date descending to show most recent first
+        return transformedEvents.sort((a,b) => b.date.getTime() - a.date.getTime());
 
     } catch (error) {
         console.error('NASA EONET API Error:', error);
