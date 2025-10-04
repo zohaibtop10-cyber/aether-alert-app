@@ -3,7 +3,7 @@
 import { useState, useEffect, useTransition } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { AlertTriangle, Globe, RefreshCw } from 'lucide-react';
+import { AlertTriangle, Globe } from 'lucide-react';
 import Image from 'next/image';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
@@ -60,8 +60,7 @@ export default function ComparePage() {
     const [afterImageUrl, setAfterImageUrl] = useState<string | null>(null);
     const [imageError, setImageError] = useState<string | null>(null);
     
-    // GIBS data might have a delay of a day or two
-    const recentDate = new Date(new Date().setDate(new Date().getDate() - 2)); 
+    const [recentDate, setRecentDate] = useState<Date | null>(null);
 
     const generateComparison = (loc: {lat: number, lon: number}) => {
         startTransition(async () => {
@@ -69,11 +68,14 @@ export default function ComparePage() {
             setBeforeImageUrl(null);
             setAfterImageUrl(null);
 
+            // Ensure dates are only generated on the client
             const randomPastDate = getRandomPastDate();
+            const currentRecentDate = new Date(new Date().setDate(new Date().getDate() - 2));
             setBeforeDate(randomPastDate);
+            setRecentDate(currentRecentDate);
 
             try {
-                const afterUrl = getGIBSEarthImageUrl(recentDate, loc.lat, loc.lon);
+                const afterUrl = getGIBSEarthImageUrl(currentRecentDate, loc.lat, loc.lon);
                 const beforeUrl = getGIBSEarthImageUrl(randomPastDate, loc.lat, loc.lon);
 
                 // Check if images are valid before setting them
@@ -81,8 +83,6 @@ export default function ComparePage() {
                 const beforeRes = await fetch(beforeUrl, { method: 'HEAD' });
 
                 if (!afterRes.ok || !beforeRes.ok) {
-                   // This is not a critical error, just a location without imagery.
-                   // Silently try another location.
                    handleNewRandomLocation();
                    return;
                 }
@@ -100,10 +100,9 @@ export default function ComparePage() {
 
 
             } catch (e: any) {
-                // This will catch actual network errors etc.
                 setImageError("Failed to fetch imagery due to a network issue. Retrying with a new location.");
                 // Automatically try a new location
-                handleNewRandomLocation();
+                setTimeout(handleNewRandomLocation, 2000);
             }
         });
     }
@@ -113,7 +112,7 @@ export default function ComparePage() {
         setComparisonLocation(randomLoc);
     }
 
-    // Effect to initialize with a random location
+    // Defer initial random location generation to client-side
     useEffect(() => {
         handleNewRandomLocation();
     }, []);
@@ -127,7 +126,7 @@ export default function ComparePage() {
 
 
     const renderContent = () => {
-        if (isPending || (!beforeImageUrl && !afterImageUrl && !imageError)) {
+        if (isPending || !beforeImageUrl || !afterImageUrl || !imageError) {
             return (
                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <Card>
@@ -163,7 +162,7 @@ export default function ComparePage() {
             );
         }
 
-        if (!beforeImageUrl || !afterImageUrl || !beforeDate) {
+        if (!beforeImageUrl || !afterImageUrl || !beforeDate || !recentDate) {
              return (
                 <div className="flex flex-col items-center justify-center text-center gap-4 text-muted-foreground min-h-[400px]">
                     <Globe className="h-12 w-12 animate-spin" />
