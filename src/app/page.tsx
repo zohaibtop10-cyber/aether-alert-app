@@ -15,6 +15,7 @@ import { Card, CardHeader, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useLocation } from '@/hooks/use-location';
 import { AreaHealthAnalysisCard } from '@/components/dashboard/area-health-analysis-card';
+import { ClimateIndexCard } from '@/components/dashboard/climate-index-card';
 import { AIAssistantCard } from '@/components/dashboard/ai-assistant-card';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from '@/components/ui/dialog';
@@ -109,7 +110,9 @@ export default function Home() {
         )}
 
         {isLoading || !currentConditions ? (
-          <Skeleton className="h-[200px] w-full" />
+          <div className="grid grid-cols-1 gap-6">
+            <Skeleton className="h-[150px] w-full" />
+          </div>
         ) : (
           <HealthAlertCard currentConditions={currentConditions} />
         )}
@@ -176,32 +179,28 @@ export default function Home() {
         </div>
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-          <div className="lg:col-span-1">
-             {isLoading || !currentConditions ? (
+          {isLoading || !currentConditions ? (
+              <>
                 <Skeleton className="h-[350px] w-full" />
-              ) : (
+                <Skeleton className="h-[350px] w-full" />
+                <Skeleton className="h-[350px] w-full" />
+                <Skeleton className="h-[350px] w-full lg:col-span-1" />
+              </>
+            ) : (
+              <>
                 <AirQualityCard
                   airQuality={currentConditions.airQuality}
                   summary={airQualitySummary}
                 />
-             )}
-          </div>
-          <div className="lg:col-span-1">
-             {isLoading || !currentConditions ? (
-                <Skeleton className="h-[350px] w-full" />
-              ) : (
-                <AreaHealthAnalysisCard
-                  currentConditions={currentConditions}
-                />
-             )}
-          </div>
-          <div className="lg:col-span-1">
-             {isLoading || dailyForecast.length === 0 ? (
-                <Skeleton className="h-[350px] w-full" />
-              ) : (
+                 <ClimateIndexCard currentConditions={currentConditions} />
                 <ForecastTabs daily={dailyForecast} hourly={hourlyForecast} />
-              )}
-          </div>
+                <div className="lg:col-span-3">
+                  <AreaHealthAnalysisCard
+                    currentConditions={currentConditions}
+                  />
+                </div>
+              </>
+           )}
         </div>
 
         <HistoricalChartCard

@@ -8,14 +8,20 @@ import {
   type GenerateAreaHealthAnalysisOutput,
 } from '@/ai/flows/generate-area-health-analysis';
 import type { CurrentConditions } from '@/lib/types';
-import { HeartPulse } from 'lucide-react';
-import { Badge } from '../ui/badge';
+import { ShieldCheck } from 'lucide-react';
 
-interface AreaHealthAnalysisCardProps {
+interface ClimateIndexCardProps {
   currentConditions: CurrentConditions;
 }
 
-export function AreaHealthAnalysisCard({ currentConditions }: AreaHealthAnalysisCardProps) {
+const getScoreColor = (score: number) => {
+  if (score >= 80) return 'text-green-500';
+  if (score >= 60) return 'text-yellow-500';
+  if (score >= 40) return 'text-orange-500';
+  return 'text-red-500';
+};
+
+export function ClimateIndexCard({ currentConditions }: ClimateIndexCardProps) {
   const [analysis, setAnalysis] = useState<GenerateAreaHealthAnalysisOutput | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -42,12 +48,8 @@ export function AreaHealthAnalysisCard({ currentConditions }: AreaHealthAnalysis
   }, [currentConditions]);
 
   const renderLoadingSkeleton = () => (
-    <div className="space-y-4">
-      <div className="space-y-3">
-        <Skeleton className="h-5 w-3/4" />
-        <Skeleton className="h-5 w-1/2" />
-        <Skeleton className="h-5 w-3/4" />
-      </div>
+    <div className="flex items-center justify-center h-full">
+        <Skeleton className="h-32 w-32 rounded-full" />
     </div>
   );
 
@@ -55,24 +57,20 @@ export function AreaHealthAnalysisCard({ currentConditions }: AreaHealthAnalysis
     <Card className="h-full">
       <CardHeader>
         <div className="flex items-center justify-between">
-          <CardTitle>Top Health Concerns</CardTitle>
-          <HeartPulse className="h-6 w-6 text-muted-foreground" />
+          <CardTitle>Climate Index</CardTitle>
+          <ShieldCheck className="h-6 w-6 text-muted-foreground" />
         </div>
-        <CardDescription>AI-powered public health risk assessment.</CardDescription>
+        <CardDescription>Overall environmental health score.</CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="flex items-center justify-center h-48">
         {isPending || !analysis ? (
           renderLoadingSkeleton()
         ) : (
-          <div>
-              <ul className="space-y-3">
-                {analysis.rankedDiseases.map((disease) => (
-                  <li key={disease.rank} className="rounded-lg border bg-card p-3">
-                    <p className="font-semibold text-base mb-1">{disease.name}</p>
-                    <p className="text-sm text-muted-foreground">{disease.reason}</p>
-                  </li>
-                ))}
-              </ul>
+            <div className="text-center">
+              <p className={`text-7xl font-bold ${getScoreColor(analysis.healthScore)}`}>
+                {analysis.healthScore}
+              </p>
+               <p className="text-sm text-muted-foreground">out of 100</p>
             </div>
         )}
       </CardContent>

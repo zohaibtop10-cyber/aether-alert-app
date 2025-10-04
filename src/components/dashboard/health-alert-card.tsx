@@ -4,9 +4,11 @@ import { useState, useTransition, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { generateHealthAlert } from '@/ai/flows/generate-health-alert';
 import type { CurrentConditions } from '@/lib/types';
-import { AlertCircle, Zap, Info } from 'lucide-react';
+import { AlertCircle, Zap, BellRing } from 'lucide-react';
 import { Skeleton } from '../ui/skeleton';
 import { useLocation } from '@/hooks/use-location';
+import { Switch } from '../ui/switch';
+import { Label } from '../ui/label';
 
 interface HealthAlertCardProps {
   currentConditions: CurrentConditions;
@@ -20,6 +22,11 @@ export function HealthAlertCard({ currentConditions }: HealthAlertCardProps) {
   const fetchAlert = (disease: string) => {
     startTransition(async () => {
       if (!currentConditions.airQuality) return;
+      // Only fetch a personalized alert if a disease is specified.
+      if (!disease) {
+        setAlert(null);
+        return;
+      }
       const input = {
         disease,
         temperature: currentConditions.temperature,
@@ -32,7 +39,12 @@ export function HealthAlertCard({ currentConditions }: HealthAlertCardProps) {
       };
       try {
         const response = await generateHealthAlert(input);
-        setAlert({ message: response.alert, isPersonalized: !!disease });
+        // Only show the alert if it's personalized and has a message.
+        if (response.alert) {
+            setAlert({ message: response.alert, isPersonalized: true });
+        } else {
+            setAlert(null);
+        }
       } catch (error) {
         console.error('Error generating health alert:', error);
         setAlert({ message: 'Could not generate an alert at this time.', isPersonalized: false });
@@ -41,15 +53,17 @@ export function HealthAlertCard({ currentConditions }: HealthAlertCardProps) {
   };
 
   useEffect(() => {
-    // We check for location having been loaded, and that currentConditions are available.
-    // The disease property can be an empty string, so we check for its existence.
     if (location && typeof location.disease !== 'undefined' && currentConditions) {
         fetchAlert(location.disease);
     }
-  // We want this effect to re-run whenever the user's location (and thus their specified disease) changes,
-  // or when new weather data comes in.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentConditions, location]);
+
+  const showCard = isPending || (alert && alert.isPersonalized);
+
+  if (!showCard) {
+    return null; // Don't render the card if there's no personalized alert.
+  }
 
   return (
     <Card className="w-full">
@@ -57,15 +71,15 @@ export function HealthAlertCard({ currentConditions }: HealthAlertCardProps) {
         <div className="flex items-center gap-3">
           <Zap className="h-6 w-6 text-primary" />
           <div>
-            <CardTitle>Health Alert</CardTitle>
+            <CardTitle>Personalized Health Alert</CardTitle>
             <CardDescription>
-              Personalized insights based on current environmental data.
+              AI-powered insights for your specified health condition.
             </CardDescription>
           </div>
         </div>
       </CardHeader>
       <CardContent>
-        <div className="rounded-lg border p-4 min-h-[72px] flex items-center">
+        <div className="rounded-lg border p-4 min-h-[72px] flex items-center mb-4">
             {isPending ? (
               <div className="space-y-2 w-full">
                 <Skeleton className="h-5 w-3/4" />
@@ -73,14 +87,19 @@ export function HealthAlertCard({ currentConditions }: HealthAlertCardProps) {
               </div>
             ) : alert ? (
               <div className="flex items-start gap-4">
-                {alert.isPersonalized ? (
-                  <AlertCircle className="mt-1 h-5 w-5 flex-shrink-0 text-destructive" />
-                ) : (
-                  <Info className="mt-1 h-5 w-5 flex-shrink-0 text-blue-500" />
-                )}
+                <AlertCircle className="mt-1 h-5 w-5 flex-shrink-0 text-destructive" />
                 <p className="text-sm font-medium">{alert.message}</p>
               </div>
             ) : null}
+          </div>
+          <div className="flex items-center justify-between rounded-lg border p-3">
+            <div className="flex items-center gap-3">
+                <BellRing className="h-5 w-5 text-muted-foreground" />
+                <Label htmlFor="notification-switch" className="font-medium text-sm">
+                    Notify Me of Changes
+                </Label>
+            </div>
+            <Switch id="notification-switch" />
           </div>
       </CardContent>
     </Card>
