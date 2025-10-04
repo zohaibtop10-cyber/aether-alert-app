@@ -55,30 +55,28 @@ export default function ComparePage() {
     const [comparisonLocation, setComparisonLocation] = useState<{lat: number, lon: number} | null>(null);
     const [locationName, setLocationName] = useState<string>('a random location');
     const [beforeDate, setBeforeDate] = useState<Date | null>(null);
+    const [afterDate, setAfterDate] = useState<Date | null>(null);
 
     const [beforeImageUrl, setBeforeImageUrl] = useState<string | null>(null);
     const [afterImageUrl, setAfterImageUrl] = useState<string | null>(null);
     const [imageError, setImageError] = useState<string | null>(null);
     
-    const [recentDate, setRecentDate] = useState<Date | null>(null);
-
     const generateComparison = (loc: {lat: number, lon: number}) => {
         startTransition(async () => {
             setImageError(null);
             setBeforeImageUrl(null);
             setAfterImageUrl(null);
 
-            // Ensure dates are only generated on the client
             const randomPastDate = getRandomPastDate();
             const currentRecentDate = new Date(new Date().setDate(new Date().getDate() - 2));
+            
             setBeforeDate(randomPastDate);
-            setRecentDate(currentRecentDate);
+            setAfterDate(currentRecentDate);
 
             try {
                 const afterUrl = getGIBSEarthImageUrl(currentRecentDate, loc.lat, loc.lon);
                 const beforeUrl = getGIBSEarthImageUrl(randomPastDate, loc.lat, loc.lon);
 
-                // Check if images are valid before setting them
                 const afterRes = await fetch(afterUrl, { method: 'HEAD' });
                 const beforeRes = await fetch(beforeUrl, { method: 'HEAD' });
 
@@ -90,7 +88,6 @@ export default function ComparePage() {
                 setAfterImageUrl(afterUrl);
                 setBeforeImageUrl(beforeUrl);
 
-                // Fetch and set location name
                  const details = await getLocationDetails({ lat: loc.lat, lon: loc.lon });
                  if (details.city || details.country) {
                     setLocationName(`${details.city || 'Region'}, ${details.country || ''}`);
@@ -112,12 +109,10 @@ export default function ComparePage() {
         setComparisonLocation(randomLoc);
     }
 
-    // Defer initial random location generation to client-side
     useEffect(() => {
         handleNewRandomLocation();
     }, []);
     
-    // Effect to generate images when comparison location changes
     useEffect(() => {
         if(comparisonLocation) {
             generateComparison(comparisonLocation);
@@ -126,7 +121,7 @@ export default function ComparePage() {
 
 
     const renderContent = () => {
-        if (isPending || !beforeImageUrl || !afterImageUrl || !imageError) {
+        if (isPending || !beforeImageUrl || !afterImageUrl) {
             return (
                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <Card>
@@ -151,7 +146,7 @@ export default function ComparePage() {
             )
         }
 
-        if (imageError && !beforeImageUrl) {
+        if (imageError) {
             return (
                 <div className="flex flex-col items-center justify-center text-center gap-4 text-muted-foreground min-h-[400px]">
                     <AlertTriangle className="h-12 w-12" />
@@ -162,7 +157,7 @@ export default function ComparePage() {
             );
         }
 
-        if (!beforeImageUrl || !afterImageUrl || !beforeDate || !recentDate) {
+        if (!beforeImageUrl || !afterImageUrl || !beforeDate || !afterDate) {
              return (
                 <div className="flex flex-col items-center justify-center text-center gap-4 text-muted-foreground min-h-[400px]">
                     <Globe className="h-12 w-12 animate-spin" />
@@ -192,7 +187,7 @@ export default function ComparePage() {
                 <Card>
                     <CardHeader>
                         <CardTitle>Now</CardTitle>
-                        <CardDescription>{format(recentDate, 'MMMM dd, yyyy')}</CardDescription>
+                        <CardDescription>{format(afterDate, 'MMMM dd, yyyy')}</CardDescription>
                     </CardHeader>
                     <CardContent>
                         <Image
