@@ -117,11 +117,6 @@ export default function ProfilePage() {
             requestResourceData: userData,
         });
         errorEmitter.emit('permission-error', permissionError);
-        toast({
-            variant: 'destructive',
-            title: 'Update Failed',
-            description: 'Could not save your profile. Please check permissions.',
-        });
       })
       .finally(() => {
         setIsLoading(false);
