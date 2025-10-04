@@ -554,7 +554,7 @@ const SidebarMenuButton = React.forwardRef<
     ref
   ) => {
     const { isMobile, state } = useSidebar()
-    const Comp = asChild ? Slot : 'button'
+    const Comp = asChild ? Slot : "button"
 
     const button = (
       <Comp
@@ -711,9 +711,8 @@ const SidebarMenuSubButton = React.forwardRef<
     asChild?: boolean,
     size?: "sm" | "md"
     isActive?: boolean
-    icon?: React.ReactNode
   }
->(({ asChild = false, size = "md", isActive, className, children, icon, ...props }, ref) => {
+>(({ asChild = false, size = "md", isActive, className, children, ...props }, ref) => {
   const Comp = asChild ? Slot : 'button';
 
   return (
@@ -732,7 +731,6 @@ const SidebarMenuSubButton = React.forwardRef<
       )}
       {...props}
     >
-      {icon && <div className="[&>svg]:size-4 [&>svg]:shrink-0 [&>svg]:text-sidebar-accent-foreground">{icon}</div>}
       <span className="truncate">{children}</span>
     </Comp>
   )

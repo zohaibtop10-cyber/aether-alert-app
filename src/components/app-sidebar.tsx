@@ -24,9 +24,6 @@ import {
   GitCompare,
   CalendarClock,
   MessageSquare,
-  BookUser,
-  Database,
-  FileText,
 } from 'lucide-react';
 import { ThemeToggle } from './theme-toggle';
 import { usePathname } from 'next/navigation';
@@ -74,16 +71,6 @@ const communityNav = [
     href: '/community/posts',
     icon: MessageSquare,
   },
-  {
-    title: 'Articles',
-    href: '/community/articles',
-    icon: FileText,
-  },
-  {
-    title: 'Data',
-    href: '/community/data',
-    icon: Database,
-  },
 ];
 
 export default function AppSidebar() {
@@ -130,10 +117,8 @@ export default function AppSidebar() {
                 {communityNav.map((item) => (
                   <SidebarMenuSubItem key={item.title}>
                     <Link href={item.href} asChild>
-                      <SidebarMenuSubButton
-                        isActive={pathname.startsWith(item.href)}
-                        icon={<item.icon />}
-                      >
+                      <SidebarMenuSubButton isActive={pathname.startsWith(item.href)}>
+                         <item.icon className="h-4 w-4 mr-2" />
                         {item.title}
                       </SidebarMenuSubButton>
                     </Link>
