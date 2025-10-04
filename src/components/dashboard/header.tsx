@@ -5,11 +5,10 @@ import { ThemeToggle } from '@/components/theme-toggle';
 import { Button } from '../ui/button';
 import { useLocation } from '@/hooks/use-location';
 import { Skeleton } from '../ui/skeleton';
-import { ProfileDialog } from './profile-dialog';
 import { useSidebar } from '../ui/sidebar';
 
 export default function Header() {
-  const { isLocating, requestLocation, location, isLocationEnabled } = useLocation();
+  const { isLocating, requestLocation, location } = useLocation();
   const { toggleSidebar } = useSidebar();
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-background/80 px-4 backdrop-blur-sm md:px-6">
