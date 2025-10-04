@@ -19,7 +19,25 @@ import { generateClimateEvents } from '@/app/actions/generate-climate-events';
 import { useLocation } from '@/hooks/use-location';
 import { Badge } from '@/components/ui/badge';
 import type { ClimateEvent } from '@/lib/events';
+import { motion } from 'framer-motion';
 
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+    },
+  },
+};
+
+const itemVariants = {
+  hidden: { y: 20, opacity: 0 },
+  visible: {
+    y: 0,
+    opacity: 1,
+  },
+};
 
 function EventCard({ event }: { event: ClimateEvent }) {
   const getSeverityBadge = (severity: string) => {
@@ -41,7 +59,7 @@ function EventCard({ event }: { event: ClimateEvent }) {
   }
 
   return (
-    <Card className="flex flex-col">
+    <Card className="flex flex-col hover:-translate-y-1">
       <CardHeader>
         <div className="flex justify-between items-start">
           <CardTitle className="line-clamp-2">{event.title}</CardTitle>
@@ -76,7 +94,37 @@ function EventCard({ event }: { event: ClimateEvent }) {
 }
 
 
-function EventList({ events }: { events: ClimateEvent[] }) {
+function EventList({ events, isLoading }: { events: ClimateEvent[], isLoading: boolean }) {
+    if (isLoading) {
+        return (
+            <motion.div 
+                variants={containerVariants}
+                initial="hidden"
+                animate="visible"
+                className="grid gap-6 md:grid-cols-2 lg:grid-cols-3"
+            >
+                {Array.from({ length: 6 }).map((_, i) => (
+                    <motion.div key={i} variants={itemVariants}>
+                        <Card>
+                            <CardHeader>
+                            <Skeleton className="h-6 w-3/4" />
+                            <Skeleton className="h-4 w-1/2" />
+                            </CardHeader>
+                            <CardContent>
+                            <Skeleton className="h-4 w-full mb-2" />
+                            <Skeleton className="h-4 w-full mb-2" />
+                            <Skeleton className="h-10 w-full" />
+                            </CardContent>
+                            <CardFooter>
+                                <Skeleton className="h-4 w-1/3" />
+                            </CardFooter>
+                        </Card>
+                    </motion.div>
+                ))}
+            </motion.div>
+        )
+    }
+
     if (events.length === 0) {
         return (
           <div className="text-center text-muted-foreground py-12">
@@ -86,11 +134,18 @@ function EventList({ events }: { events: ClimateEvent[] }) {
         );
     }
     return (
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <motion.div 
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+            className="grid gap-6 md:grid-cols-2 lg:grid-cols-3"
+        >
              {events.map(event => (
-                <EventCard key={event.id} event={event} />
+                <motion.div key={event.id} variants={itemVariants}>
+                    <EventCard event={event} />
+                </motion.div>
             ))}
-        </div>
+        </motion.div>
     )
 }
 
@@ -162,10 +217,8 @@ export default function EventsPage() {
     };
   }, [events, searchQuery]);
   
-  const noResults = !isLoading && !pastEvents.length && !ongoingEvents.length && !upcomingEvents.length;
-
   const renderContent = () => {
-    if (isLoading || isLocating) {
+    if (isLocating) {
         return (
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                 {Array.from({ length: 6 }).map((_, i) => (
@@ -206,13 +259,13 @@ export default function EventsPage() {
                 <TabsTrigger value="upcoming">Upcoming (7 Days)</TabsTrigger>
             </TabsList>
             <TabsContent value="past" className="mt-4">
-                <EventList events={pastEvents} />
+                <EventList events={pastEvents} isLoading={isLoading} />
             </TabsContent>
             <TabsContent value="ongoing" className="mt-4">
-                <EventList events={ongoingEvents} />
+                <EventList events={ongoingEvents} isLoading={isLoading} />
             </TabsContent>
             <TabsContent value="upcoming" className="mt-4">
-                <EventList events={upcomingEvents} />
+                <EventList events={upcomingEvents} isLoading={isLoading} />
             </TabsContent>
       </Tabs>
     )

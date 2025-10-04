@@ -15,7 +15,7 @@ import { Card, CardHeader, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useLocation } from '@/hooks/use-location';
 import { PermissionsDialog } from '@/components/permissions-dialog';
-
+import { motion } from 'framer-motion';
 
 const getAirQualitySummary = (
   airQuality: CurrentConditions['airQuality'] | undefined
@@ -35,6 +35,25 @@ const getAirQualitySummary = (
     return { label: 'Very Unhealthy', color: 'text-purple-500' };
   return { label: 'Hazardous', color: 'text-red-700' };
 };
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+    },
+  },
+};
+
+const itemVariants = {
+  hidden: { y: 20, opacity: 0 },
+  visible: {
+    y: 0,
+    opacity: 1,
+  },
+};
+
 
 function DashboardPage() {
   const { location, isLocating, error } = useLocation();
@@ -118,48 +137,68 @@ function DashboardPage() {
           </Card>
         )}
 
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+        <motion.div
+          variants={containerVariants}
+          initial="hidden"
+          animate={!isLoading ? 'visible' : 'hidden'}
+          className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5"
+        >
           {isLoading || !currentConditions ? (
             Array.from({ length: 5 }).map((_, i) => (
               <Skeleton key={i} className="h-[125px] w-full" />
             ))
           ) : (
             <>
-              <InfoCard
-                title="Temperature"
-                value={`${currentConditions.temperature}°C`}
-                icon={<Thermometer className="size-6 text-muted-foreground" />}
-                description={`Min: ${currentConditions.minTemperature}°C / Max: ${currentConditions.maxTemperature}°C`}
-              />
-              <InfoCard
-                title="Humidity"
-                value={`${currentConditions.humidity}%`}
-                icon={<Droplets className="size-6 text-muted-foreground" />}
-                description="Relative humidity level"
-              />
-              <InfoCard
-                title="Rainfall"
-                value={`${currentConditions.rainChance}%`}
-                icon={<CloudRain className="size-6 text-muted-foreground" />}
-                description="Probability of precipitation"
-              />
-              <InfoCard
-                title="Wind"
-                value={`${currentConditions.windSpeed} m/s`}
-                icon={<Wind className="size-6 text-muted-foreground" />}
-                description="Current wind speed"
-              />
-              <InfoCard
-                title="Pressure"
-                value={`${currentConditions.pressure} kPa`}
-                icon={<Gauge className="size-6 text-muted-foreground" />}
-                description="Atmospheric pressure"
-              />
+              <motion.div variants={itemVariants}>
+                <InfoCard
+                  title="Temperature"
+                  value={`${currentConditions.temperature}°C`}
+                  icon={<Thermometer className="size-6 text-muted-foreground" />}
+                  description={`Min: ${currentConditions.minTemperature}°C / Max: ${currentConditions.maxTemperature}°C`}
+                />
+              </motion.div>
+              <motion.div variants={itemVariants}>
+                <InfoCard
+                  title="Humidity"
+                  value={`${currentConditions.humidity}%`}
+                  icon={<Droplets className="size-6 text-muted-foreground" />}
+                  description="Relative humidity level"
+                />
+              </motion.div>
+              <motion.div variants={itemVariants}>
+                <InfoCard
+                  title="Rainfall"
+                  value={`${currentConditions.rainChance}%`}
+                  icon={<CloudRain className="size-6 text-muted-foreground" />}
+                  description="Probability of precipitation"
+                />
+              </motion.div>
+              <motion.div variants={itemVariants}>
+                <InfoCard
+                  title="Wind"
+                  value={`${currentConditions.windSpeed} m/s`}
+                  icon={<Wind className="size-6 text-muted-foreground" />}
+                  description="Current wind speed"
+                />
+              </motion.div>
+              <motion.div variants={itemVariants}>
+                <InfoCard
+                  title="Pressure"
+                  value={`${currentConditions.pressure} kPa`}
+                  icon={<Gauge className="size-6 text-muted-foreground" />}
+                  description="Atmospheric pressure"
+                />
+              </motion.div>
             </>
           )}
-        </div>
+        </motion.div>
 
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <motion.div 
+            variants={containerVariants}
+            initial="hidden"
+            animate={!isLoading ? 'visible' : 'hidden'}
+            className="grid grid-cols-1 gap-6 lg:grid-cols-2"
+        >
           {isLoading || !currentConditions ? (
               <>
                 <Skeleton className="h-[350px] w-full" />
@@ -167,20 +206,30 @@ function DashboardPage() {
               </>
             ) : (
               <>
-                <AirQualityCard
-                  airQuality={currentConditions.airQuality}
-                  summary={airQualitySummary}
-                />
-                <ForecastTabs daily={dailyForecast} hourly={hourlyForecast} />
+                <motion.div variants={itemVariants}>
+                  <AirQualityCard
+                    airQuality={currentConditions.airQuality}
+                    summary={airQualitySummary}
+                  />
+                </motion.div>
+                <motion.div variants={itemVariants}>
+                  <ForecastTabs daily={dailyForecast} hourly={hourlyForecast} />
+                </motion.div>
               </>
            )}
-        </div>
+        </motion.div>
 
-        <HistoricalChartCard
-          data7d={historicalData7d}
-          data30d={historicalData30d}
-          isLoading={isLoading}
-        />
+        <motion.div
+           variants={itemVariants}
+           initial="hidden"
+           animate={!isLoading ? "visible" : "hidden"}
+        >
+          <HistoricalChartCard
+            data7d={historicalData7d}
+            data30d={historicalData30d}
+            isLoading={isLoading}
+          />
+        </motion.div>
     </div>
   );
 }

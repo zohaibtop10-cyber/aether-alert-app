@@ -32,10 +32,29 @@ import { PlusCircle, Search, UserCircle } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatDistanceToNow } from 'date-fns';
 import { Input } from '@/components/ui/input';
+import { motion } from 'framer-motion';
 
 const postSchema = z.object({
   content: z.string().min(10, 'Post must be at least 10 characters long.').max(500, 'Post cannot exceed 500 characters.'),
 });
+
+const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1,
+      },
+    },
+  };
+  
+  const itemVariants = {
+    hidden: { y: 20, opacity: 0 },
+    visible: {
+      y: 0,
+      opacity: 1,
+    },
+  };
 
 function CreatePostForm({ setDialogOpen }: { setDialogOpen: (open: boolean) => void }) {
   const { user } = useUser();
@@ -180,7 +199,12 @@ export default function PostsPage() {
                 />
             </div>
 
-            <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2">
+            <motion.div 
+                variants={containerVariants}
+                initial="hidden"
+                animate="visible"
+                className="grid gap-6 md:grid-cols-1 lg:grid-cols-2"
+            >
                 {isLoading && Array.from({ length: 4 }).map((_, i) => (
                     <Card key={i}>
                         <CardHeader>
@@ -194,22 +218,24 @@ export default function PostsPage() {
                 ))}
 
                 {!isLoading && filteredPosts.map(post => (
-                    <Card key={post.id}>
-                       <CardHeader className="flex flex-row items-center gap-4">
-                            <UserCircle className="h-10 w-10 text-muted-foreground" />
-                            <div>
-                                <CardTitle className="text-lg">{post.authorName}</CardTitle>
-                                <CardDescription>
-                                    {post.createdAt ? formatDistanceToNow(post.createdAt.toDate(), { addSuffix: true }) : 'just now'}
-                                </CardDescription>
-                            </div>
-                        </CardHeader>
-                        <CardContent>
-                            <p className="text-sm text-foreground whitespace-pre-wrap">{post.content}</p>
-                        </CardContent>
-                    </Card>
+                    <motion.div key={post.id} variants={itemVariants}>
+                        <Card className="hover:-translate-y-1">
+                        <CardHeader className="flex flex-row items-center gap-4">
+                                <UserCircle className="h-10 w-10 text-muted-foreground" />
+                                <div>
+                                    <CardTitle className="text-lg">{post.authorName}</CardTitle>
+                                    <CardDescription>
+                                        {post.createdAt ? formatDistanceToNow(post.createdAt.toDate(), { addSuffix: true }) : 'just now'}
+                                    </CardDescription>
+                                </div>
+                            </CardHeader>
+                            <CardContent>
+                                <p className="text-sm text-foreground whitespace-pre-wrap">{post.content}</p>
+                            </CardContent>
+                        </Card>
+                    </motion.div>
                 ))}
-            </div>
+            </motion.div>
 
             {!isLoading && filteredPosts.length === 0 && (
                 <div className="text-center text-muted-foreground py-12">

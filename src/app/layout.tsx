@@ -8,6 +8,7 @@ import { Sidebar, SidebarProvider, SidebarInset } from '@/components/ui/sidebar'
 import AppSidebar from '@/components/app-sidebar';
 import { EcoBotChatWidget } from '@/components/ecobot/ecobot-chat-widget';
 import Header from '@/components/dashboard/header';
+import { MotionWrapper } from '@/components/motion-wrapper';
 
 export const metadata: Metadata = {
   title: 'Aether Alert',
@@ -41,7 +42,7 @@ export default function RootLayout({
                     <div className="flex flex-col h-screen">
                         <Header />
                         <main className="flex-1 overflow-y-auto">
-                            {children}
+                            <MotionWrapper>{children}</MotionWrapper>
                         </main>
                     </div>
                 </SidebarInset>

@@ -10,7 +10,7 @@ interface InfoCardProps {
 
 export function InfoCard({ title, value, icon, description }: InfoCardProps) {
   return (
-    <Card>
+    <Card className="hover:-translate-y-1">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <div className="text-sm font-medium">{title}</div>
         {icon}
