@@ -10,7 +10,7 @@ import { ForecastTabs } from '@/components/dashboard/forecast-tabs';
 import { HistoricalChartCard } from '@/components/dashboard/historical-chart-card';
 import { getWeatherData } from './actions/get-weather-data';
 import { getHistoricalData } from './actions/get-historical-data';
-import { Thermometer, Droplets, CloudRain, Wind, AirVent } from 'lucide-react';
+import { Thermometer, Droplets, CloudRain, Wind, AirVent, Gauge } from 'lucide-react';
 import type { CurrentConditions, HistoricalDataPoint } from '@/lib/types';
 import { Card, CardHeader, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -105,9 +105,9 @@ function DashboardPage() {
           </Card>
         )}
 
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-4">
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
           {isLoading || !currentConditions ? (
-            Array.from({ length: 4 }).map((_, i) => (
+            Array.from({ length: 5 }).map((_, i) => (
               <Skeleton key={i} className="h-[125px] w-full" />
             ))
           ) : (
@@ -135,6 +135,12 @@ function DashboardPage() {
                 value={`${currentConditions.windSpeed} m/s`}
                 icon={<Wind className="size-6 text-muted-foreground" />}
                 description="Current wind speed"
+              />
+              <InfoCard
+                title="Pressure"
+                value={`${currentConditions.pressure} kPa`}
+                icon={<Gauge className="size-6 text-muted-foreground" />}
+                description="Atmospheric pressure"
               />
             </>
           )}
