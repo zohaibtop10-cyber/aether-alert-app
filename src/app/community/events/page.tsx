@@ -10,14 +10,15 @@ import {
 } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { useState, useEffect, useMemo } from 'react';
-import { CalendarIcon, MapPin, Search, ExternalLink, AlertTriangle, Wind, Droplets, Thermometer } from 'lucide-react';
+import { CalendarIcon, MapPin, Search, AlertTriangle, Wind, Droplets, Thermometer } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { format, formatDistanceToNow, addDays, subDays, isWithinInterval, isToday, parseISO } from 'date-fns';
+import { format, formatDistanceToNow, addDays, subDays, parseISO } from 'date-fns';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { generateClimateEvents, type ClimateEvent } from '@/app/actions/generate-climate-events';
+import { generateClimateEvents } from '@/app/actions/generate-climate-events';
 import { useLocation } from '@/hooks/use-location';
 import { Badge } from '@/components/ui/badge';
+import type { ClimateEvent } from '@/lib/events';
 
 
 function EventCard({ event }: { event: ClimateEvent }) {
