@@ -98,9 +98,9 @@ export default function AppSidebar() {
         <SidebarMenu>
           {sidebarNav.map((item) => (
             <SidebarMenuItem key={item.title}>
-              <Link href={item.href}>
+              <Link href={item.href} passHref>
                 <SidebarMenuButton
-                  asChild
+                  as="a"
                   isActive={pathname === item.href}
                   icon={<item.icon />}
                 >
@@ -119,8 +119,8 @@ export default function AppSidebar() {
               <SidebarMenuSub>
                 {communityNav.map((item) => (
                   <SidebarMenuSubItem key={item.title}>
-                    <Link href={item.href}>
-                      <SidebarMenuSubButton asChild isActive={pathname.startsWith(item.href)} icon={<item.icon />}>
+                    <Link href={item.href} passHref>
+                      <SidebarMenuSubButton as="a" isActive={pathname.startsWith(item.href)} icon={<item.icon />}>
                         {item.title}
                       </SidebarMenuSubButton>
                     </Link>
@@ -130,8 +130,8 @@ export default function AppSidebar() {
             </CollapsibleContent>
           </Collapsible>
           <SidebarMenuItem>
-            <Link href="/profile">
-              <SidebarMenuButton asChild isActive={pathname === "/profile"} icon={<User />}>
+            <Link href="/profile" passHref>
+              <SidebarMenuButton as="a" isActive={pathname === "/profile"} icon={<User />}>
                 Profile
               </SidebarMenuButton>
             </Link>
