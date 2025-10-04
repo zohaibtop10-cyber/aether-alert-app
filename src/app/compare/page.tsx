@@ -7,6 +7,7 @@ import { AlertTriangle, Globe, RefreshCw } from 'lucide-react';
 import Image from 'next/image';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
+import { getLocationDetails } from '@/app/actions/get-location-details';
 
 // Function to convert Lat/Lon to Tile coordinates for WMTS
 function latLonToTile(lat: number, lon: number, zoom: number): { x: number, y: number } {
@@ -19,17 +20,21 @@ function latLonToTile(lat: number, lon: number, zoom: number): { x: number, y: n
 
 function getGIBSEarthImageUrl(date: Date, lat: number, lon: number): string {
     const formattedDate = format(date, 'yyyy-MM-dd');
-    const zoom = 6;
+    const zoom = 5; // Zoom out slightly for better context
     const {x, y} = latLonToTile(lat, lon, zoom);
-    const layer = 'MODIS_Terra_CorrectedReflectance_TrueColor';
+    // This layer has much better global coverage
+    const layer = 'MODIS_Terra_CorrectedReflectance_TrueColor'; 
     return `https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/${layer}/default/${formattedDate}/GoogleMapsCompatible_Level${zoom}/${y}/${x}.jpg`;
 }
 
-function getRandomLocation() {
-    const lat = Math.random() * 180 - 90;  // -90 to 90
+// Generates random coordinates more likely to be on land
+function getRandomLandLocation() {
+    // Restrict latitude to exclude extreme polar regions where imagery is sparse
+    const lat = Math.random() * 140 - 70; // Approx -70 to 70
     const lon = Math.random() * 360 - 180; // -180 to 180
     return { lat, lon };
 }
+
 
 function getRandomPastDate(): Date {
     const today = new Date();
@@ -53,16 +58,16 @@ export default function ComparePage() {
 
     const [beforeImageUrl, setBeforeImageUrl] = useState<string | null>(null);
     const [afterImageUrl, setAfterImageUrl] = useState<string | null>(null);
-    const [imageError, setImageError] = useState<boolean>(false);
+    const [imageError, setImageError] = useState<string | null>(null);
     
     // GIBS data might have a delay of a day or two
     const recentDate = new Date(new Date().setDate(new Date().getDate() - 2)); 
 
-    const generateComparison = (loc: {lat: number, lon: number} | null) => {
+    const generateComparison = async (loc: {lat: number, lon: number} | null) => {
         if (!loc) return;
         
-        startTransition(() => {
-            setImageError(false);
+        startTransition(async () => {
+            setImageError(null);
             setBeforeImageUrl(null);
             setAfterImageUrl(null);
 
@@ -72,18 +77,43 @@ export default function ComparePage() {
             try {
                 const afterUrl = getGIBSEarthImageUrl(recentDate, loc.lat, loc.lon);
                 const beforeUrl = getGIBSEarthImageUrl(randomPastDate, loc.lat, loc.lon);
+
+                // Check if images are valid before setting them
+                const afterRes = await fetch(afterUrl, { method: 'HEAD' });
+                const beforeRes = await fetch(beforeUrl, { method: 'HEAD' });
+
+                if (!afterRes.ok || !beforeRes.ok) {
+                    throw new Error("Imagery not available for this specific date and location.");
+                }
+
                 setAfterImageUrl(afterUrl);
                 setBeforeImageUrl(beforeUrl);
-            } catch (e) {
-                console.error("Error generating image URLs", e);
-                setImageError(true);
+
+                // Fetch and set location name
+                 const details = await getLocationDetails({ lat: loc.lat, lon: loc.lon });
+                 if (details.city || details.country) {
+                    setLocationName(`${details.city || 'Region'}, ${details.country || ''}`);
+                 } else {
+                    setLocationName(`Lat: ${loc.lat.toFixed(2)}, Lon: ${loc.lon.toFixed(2)}`);
+                 }
+
+
+            } catch (e: any) {
+                console.error("Error generating image URLs:", e);
+                setImageError(e.message || "Failed to load imagery. The location might be in an area with sparse coverage (e.g., open ocean).");
+                handleNewRandomLocation(); // Try a new location automatically
             }
         });
     }
 
+    const handleNewRandomLocation = () => {
+        const randomLoc = getRandomLandLocation();
+        setComparisonLocation(randomLoc);
+    }
+
     // Effect to initialize with a random location
     useEffect(() => {
-        handleRandomLocation();
+        handleNewRandomLocation();
     }, []);
     
     // Effect to generate images when comparison location changes
@@ -94,14 +124,8 @@ export default function ComparePage() {
     }, [comparisonLocation]);
 
 
-    const handleRandomLocation = () => {
-        const randomLoc = getRandomLocation();
-        setComparisonLocation(randomLoc);
-        setLocationName(`Lat: ${randomLoc.lat.toFixed(2)}, Lon: ${randomLoc.lon.toFixed(2)}`);
-    }
-
     const renderContent = () => {
-        if (isPending || (!beforeImageUrl && !afterImageUrl && !imageError)) {
+        if (isPending || (!beforeImageUrl && !afterImageUrl)) {
             return (
                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <Card>
@@ -127,11 +151,13 @@ export default function ComparePage() {
         }
 
         if (imageError || !beforeImageUrl || !afterImageUrl || !beforeDate) {
+            // This state should be rare now, but kept as a fallback.
             return (
-                <div className="flex flex-col items-center justify-center text-center gap-4 text-muted-foreground">
+                <div className="flex flex-col items-center justify-center text-center gap-4 text-muted-foreground min-h-[400px]">
                     <AlertTriangle className="h-12 w-12" />
-                    <p>Could not load satellite imagery for this location.</p>
-                     <p className="text-sm">This can happen for areas with no recent cloud-free imagery, like polar regions.</p>
+                    <p className="font-semibold">Could not load satellite imagery.</p>
+                    <p className="text-sm max-w-md">{imageError}</p>
+                    <p className="text-xs">Attempting to find a new location...</p>
                 </div>
             );
         }
@@ -151,7 +177,6 @@ export default function ComparePage() {
                             height={600}
                             className="rounded-lg object-cover aspect-square bg-muted"
                             unoptimized
-                            onError={() => setImageError(true)}
                         />
                     </CardContent>
                 </Card>
@@ -168,7 +193,6 @@ export default function ComparePage() {
                             height={600}
                             className="rounded-lg object-cover aspect-square bg-muted"
                             unoptimized
-                            onError={() => setImageError(true)}
                         />
                     </CardContent>
                 </Card>
@@ -186,11 +210,7 @@ export default function ComparePage() {
                     </p>
                 </div>
                 <div className="flex items-center gap-2">
-                    <Button onClick={() => generateComparison(comparisonLocation)} disabled={isPending || !comparisonLocation}>
-                        <RefreshCw className={`mr-2 h-4 w-4 ${isPending ? 'animate-spin' : ''}`} />
-                        Refresh
-                    </Button>
-                    <Button onClick={handleRandomLocation} variant="outline" disabled={isPending}>
+                    <Button onClick={handleNewRandomLocation} variant="outline" disabled={isPending}>
                         <Globe className="mr-2 h-4 w-4" />
                         Another Location
                     </Button>
