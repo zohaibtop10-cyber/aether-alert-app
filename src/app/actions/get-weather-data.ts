@@ -30,25 +30,22 @@ const getAirQualityStatus = (pm25: number) => {
 async function getOpenMeteoData(location: Location): Promise<CurrentConditions> {
     const { lat, lon } = location;
 
-    // Common params for weather, including 'precipitation'
     const weatherParams = [
         "temperature_2m",
         "relative_humidity_2m",
-        "precipitation", // Using precipitation amount as requested
+        "precipitation",
         "precipitation_probability",
         "wind_speed_10m",
         "surface_pressure",
+        "uv_index",
     ].join(",");
     
-    // Daily forecast params
-    const dailyParams = ["temperature_2m_max", "temperature_2m_min", "precipitation_probability_max"].join(",");
+    const dailyParams = ["temperature_2m_max", "temperature_2m_min", "precipitation_probability_max", "uv_index_max"].join(",");
     
-    // Hourly forecast params - removed pm2_5 as it's not available in this endpoint
-    const hourlyParams = ["temperature_2m", "precipitation_probability"].join(",");
+    const hourlyParams = ["temperature_2m", "precipitation_probability", "uv_index"].join(",");
 
     const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=${weatherParams}&daily=${dailyParams}&hourly=${hourlyParams}&timezone=auto&forecast_days=7`;
 
-    // Air Quality API URL, adding 'pm10'
     const airQualityParams = ["pm10", "pm2_5", "ozone", "carbon_monoxide", "nitrogen_dioxide"].join(",");
     const airQualityUrl = `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${lat}&longitude=${lon}&current=${airQualityParams}&hourly=pm2_5&timezone=auto&forecast_days=1`;
 
@@ -59,41 +56,40 @@ async function getOpenMeteoData(location: Location): Promise<CurrentConditions> 
         ]);
 
         if (!weatherResponse.ok) {
-            throw new Error(`Failed to fetch weather data from Open-Meteo. Status: ${weatherResponse.status}`);
+            console.warn(`Open-Meteo Weather API failed (Status: ${weatherResponse.status}), trying NASA.`);
+            return await getNasaPowerData(location);
         }
         if (!airQualityResponse.ok) {
-            throw new Error(`Failed to fetch air quality data from Open-Meteo. Status: ${airQualityResponse.status}`);
+            console.warn(`Open-Meteo Air Quality API failed (Status: ${airQualityResponse.status})`);
+            // Continue without air quality data if it fails
         }
 
         const weatherData = await weatherResponse.json();
-        const airQualityData = await airQualityResponse.json();
+        const airQualityData = airQualityResponse.ok ? await airQualityResponse.json() : null;
 
         const current = weatherData.current;
         const daily = weatherData.daily;
         const hourlyWeather = weatherData.hourly;
-        const aqCurrent = airQualityData.current;
-        const aqHourly = airQualityData.hourly;
+        const aqCurrent = airQualityData?.current;
+        const aqHourly = airQualityData?.hourly;
 
-        if (!current || !daily || !hourlyWeather || !aqCurrent || !aqHourly) {
+        if (!current || !daily || !hourlyWeather) {
             throw new Error("Incomplete data received from Open-Meteo APIs.");
         }
 
-        // Process daily forecast
         const dailyForecast: Forecast[] = daily.time.slice(0, 7).map((time: string, index: number) => ({
             time: new Date(time).toLocaleDateString('en-US', { weekday: 'short' }),
             temperature: Math.round((daily.temperature_2m_max[index] + daily.temperature_2m_min[index]) / 2),
             rainChance: daily.precipitation_probability_max[index],
-            airQualityStatus: "N/A" // Daily AQI is complex, keeping as N/A for now
+            airQualityStatus: "N/A"
         }));
 
-        // Process hourly forecast
         const now = new Date();
         const currentHourIndex = hourlyWeather.time.findIndex((t: string) => new Date(t) >= now);
         
         const hourlyForecast: Forecast[] = hourlyWeather.time.slice(currentHourIndex, currentHourIndex + 24).map((time: string, index: number) => {
             const actualIndex = currentHourIndex + index;
-            // Ensure we don't go out of bounds for air quality data
-            const pm25Value = aqHourly.pm2_5[actualIndex] ?? 0;
+            const pm25Value = aqHourly?.pm2_5[actualIndex] ?? 0;
             return {
                 time: new Date(time).toLocaleTimeString('en-US', { hour: 'numeric', hour12: true }),
                 temperature: Math.round(hourlyWeather.temperature_2m[actualIndex]),
@@ -102,40 +98,95 @@ async function getOpenMeteoData(location: Location): Promise<CurrentConditions> 
             };
         });
 
-        // Pressure is in hPa, convert to kPa for consistency
         const pressureInKpa = current.surface_pressure / 10;
 
         return {
+            source: 'Open-Meteo',
             temperature: Math.round(current.temperature_2m),
             minTemperature: Math.round(daily.temperature_2m_min[0]),
             maxTemperature: Math.round(daily.temperature_2m_max[0]),
             humidity: Math.round(current.relative_humidity_2m),
-            rainChance: current.precipitation_probability, // Using probability for the main card
+            rainChance: current.precipitation_probability,
             windSpeed: parseFloat(current.wind_speed_10m.toFixed(2)),
             pressure: parseFloat(pressureInKpa.toFixed(2)),
-            airQuality: {
+            uvIndex: parseFloat(current.uv_index.toFixed(2)),
+            airQuality: aqCurrent ? {
                 pm10: parseFloat(aqCurrent.pm10.toFixed(2)),
                 pm25: parseFloat(aqCurrent.pm2_5.toFixed(2)),
                 o3: parseFloat(aqCurrent.ozone.toFixed(2)),
                 co: parseFloat(aqCurrent.carbon_monoxide.toFixed(2)),
                 no2: parseFloat(aqCurrent.nitrogen_dioxide.toFixed(2)),
-            },
+            } : undefined,
             dailyForecast,
             hourlyForecast
         };
 
     } catch (error) {
-        console.error("Open-Meteo API Error:", error);
-        if (error instanceof Error) {
-            throw new Error(error.message);
-        }
-        throw new Error("An unknown error occurred while fetching data from Open-Meteo.");
+        console.error("Open-Meteo API Error, falling back to NASA:", error);
+        return await getNasaPowerData(location);
+    }
+}
+
+async function getNasaPowerData(location: Location): Promise<CurrentConditions> {
+    const apiKey = process.env.NASA_API_KEY;
+    if (!apiKey) {
+      throw new Error("NASA API key is not configured.");
+    }
+    const { lat, lon } = location;
+    const parameters = [
+      'T2M', // Temperature at 2 Meters
+      'RH2M', // Relative Humidity at 2 Meters
+      'PRECTOTCORR', // Precipitation
+      'WS10M', // Wind Speed at 10 Meters
+      'PS', // Surface Pressure
+    ].join(',');
+  
+    const url = `https://power.larc.nasa.gov/api/temporal/daily/point?start=20230101&end=20230105&latitude=${lat}&longitude=${lon}&community=RE&parameters=${parameters}&format=JSON`;
+  
+    try {
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`NASA POWER API failed: ${response.statusText}`);
+      }
+      const data = await response.json();
+      const fillValue = data.header.fill_value;
+
+      // Helper to get the last valid value from a time series
+      const getLastValidValue = (series: { [date: string]: number }) => {
+          const validEntries = Object.entries(series).filter(([, value]) => value !== fillValue);
+          return validEntries.length > 0 ? validEntries[validEntries.length - 1][1] : 0;
+      };
+
+      const temp = getLastValidValue(data.properties.parameter.T2M);
+      const humidity = getLastValidValue(data.properties.parameter.RH2M);
+      const precipitation = getLastValidValue(data.properties.parameter.PRECTOTCORR);
+      const windSpeed = getLastValidValue(data.properties.parameter.WS10M);
+      const pressure = getLastValidValue(data.properties.parameter.PS);
+  
+      return {
+        source: 'NASA POWER',
+        temperature: Math.round(temp),
+        minTemperature: Math.round(temp - 5), // Placeholder
+        maxTemperature: Math.round(temp + 5), // Placeholder
+        humidity: Math.round(humidity),
+        rainChance: Math.round(precipitation > 0.1 ? 80 : 10), // Placeholder
+        windSpeed: parseFloat(windSpeed.toFixed(2)),
+        pressure: parseFloat(pressure.toFixed(2)),
+        uvIndex: 0, // Not available from this NASA source
+        airQuality: undefined, // Not available
+        dailyForecast: [], // Not available
+        hourlyForecast: [], // Not available
+      };
+    } catch (e) {
+      console.error("NASA POWER API Error:", e);
+      throw new Error("All data sources failed. Please try again later.");
     }
 }
 
 
 export async function getWeatherData(location: Location): Promise<ApiResponse> {
   try {
+    // We try Open-Meteo first as it has richer real-time and forecast data
     const currentConditions = await getOpenMeteoData(location);
     
     return {

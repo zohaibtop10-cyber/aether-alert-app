@@ -15,6 +15,7 @@ export interface AirQuality {
 }
 
 export interface CurrentConditions {
+  source: 'NASA POWER' | 'Open-Meteo';
   temperature: number;
   minTemperature: number;
   maxTemperature: number;
@@ -22,7 +23,8 @@ export interface CurrentConditions {
   rainChance: number;
   windSpeed: number;
   pressure: number;
-  airQuality: AirQuality;
+  uvIndex: number;
+  airQuality?: AirQuality;
   dailyForecast: Forecast[];
   hourlyForecast: Forecast[];
 }

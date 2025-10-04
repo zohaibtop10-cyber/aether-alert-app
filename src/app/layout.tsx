@@ -3,10 +3,14 @@ import './globals.css';
 import { ThemeProvider } from '@/components/theme-provider';
 import { Toaster } from '@/components/ui/toaster';
 import { LocationProvider } from '@/hooks/use-location';
+import { FirebaseClientProvider } from '@/firebase';
+import { Sidebar, SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
+import AppSidebar from '@/components/app-sidebar';
+import { EcoBotChatWidget } from '@/components/ecobot/ecobot-chat-widget';
 
 export const metadata: Metadata = {
-  title: 'MyClimateGuard',
-  description: 'Realtime environmental conditions, weather predictions, and health alerts.',
+  title: 'MyClimateGuard 2.0',
+  description: 'Real-time environmental conditions, weather predictions, and health alerts.',
 };
 
 export default function RootLayout({
@@ -25,12 +29,22 @@ export default function RootLayout({
         />
       </head>
       <body className="font-body antialiased">
-        <ThemeProvider>
-          <LocationProvider>
-            {children}
-          </LocationProvider>
-          <Toaster />
-        </ThemeProvider>
+        <FirebaseClientProvider>
+          <ThemeProvider>
+            <LocationProvider>
+              <SidebarProvider>
+                <Sidebar>
+                  <AppSidebar />
+                </Sidebar>
+                <SidebarInset>
+                    {children}
+                </SidebarInset>
+                <EcoBotChatWidget />
+              </SidebarProvider>
+              <Toaster />
+            </LocationProvider>
+          </ThemeProvider>
+        </FirebaseClientProvider>
       </body>
     </html>
   );

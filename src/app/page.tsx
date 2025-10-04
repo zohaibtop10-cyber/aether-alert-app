@@ -1,21 +1,20 @@
 'use client';
 
-import { useState, useEffect, useTransition } from 'react';
+import { useState, useEffect, useTransition, Suspense } from 'react';
+import { useUser } from '@/firebase';
+import { useRouter } from 'next/navigation';
 import Header from '@/components/dashboard/header';
-import { HealthAlertCard } from '@/components/dashboard/health-alert-card';
 import { InfoCard } from '@/components/dashboard/info-card';
 import { AirQualityCard } from '@/components/dashboard/air-quality-card';
 import { ForecastTabs } from '@/components/dashboard/forecast-tabs';
 import { HistoricalChartCard } from '@/components/dashboard/historical-chart-card';
 import { getWeatherData } from './actions/get-weather-data';
 import { getHistoricalData } from './actions/get-historical-data';
-import { Thermometer, Droplets, CloudRain, ThermometerSun, ThermometerSnowflake, Wind, Gauge } from 'lucide-react';
-import type { CurrentConditions, Forecast, HistoricalDataPoint } from '@/lib/types';
+import { Thermometer, Droplets, CloudRain, Wind } from 'lucide-react';
+import type { CurrentConditions, HistoricalDataPoint } from '@/lib/types';
 import { Card, CardHeader, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useLocation } from '@/hooks/use-location';
-import { AreaHealthAnalysisCard } from '@/components/dashboard/area-health-analysis-card';
-import { ClimateIndexCard } from '@/components/dashboard/climate-index-card';
 
 
 const getAirQualitySummary = (
@@ -37,7 +36,7 @@ const getAirQualitySummary = (
   return { label: 'Hazardous', color: 'text-red-700' };
 };
 
-export default function Home() {
+function DashboardPage() {
   const { location, isLocating, error } = useLocation();
   const [isPending, startTransition] = useTransition();
 
@@ -106,82 +105,46 @@ export default function Home() {
           </Card>
         )}
 
-        {isLoading || !currentConditions ? (
-          <div className="grid grid-cols-1 gap-6">
-            <Skeleton className="h-[150px] w-full" />
-          </div>
-        ) : (
-          <HealthAlertCard currentConditions={currentConditions} />
-        )}
-
-
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-4">
           {isLoading || !currentConditions ? (
-            Array.from({ length: 7 }).map((_, i) => (
+            Array.from({ length: 4 }).map((_, i) => (
               <Skeleton key={i} className="h-[125px] w-full" />
             ))
           ) : (
             <>
               <InfoCard
                 title="Temperature"
-                value={currentConditions.temperature}
-                unit="°C"
+                value={`${currentConditions.temperature}°C`}
                 icon={<Thermometer className="size-6 text-muted-foreground" />}
-                description="Current ambient temperature"
+                description={`Min: ${currentConditions.minTemperature}°C / Max: ${currentConditions.maxTemperature}°C`}
               />
               <InfoCard
                 title="Humidity"
-                value={currentConditions.humidity}
-                unit="%"
+                value={`${currentConditions.humidity}%`}
                 icon={<Droplets className="size-6 text-muted-foreground" />}
                 description="Relative humidity level"
               />
               <InfoCard
-                title="Rain Chance"
-                value={currentConditions.rainChance}
-                unit="%"
+                title="Rainfall"
+                value={`${currentConditions.rainChance}%`}
                 icon={<CloudRain className="size-6 text-muted-foreground" />}
                 description="Probability of precipitation"
               />
               <InfoCard
-                title="Wind Speed"
-                value={currentConditions.windSpeed}
-                unit=" m/s"
+                title="Wind"
+                value={`${currentConditions.windSpeed} m/s`}
                 icon={<Wind className="size-6 text-muted-foreground" />}
                 description="Current wind speed"
-              />
-              <InfoCard
-                title="Pressure"
-                value={currentConditions.pressure}
-                unit=" kPa"
-                icon={<Gauge className="size-6 text-muted-foreground" />}
-                description="Atmospheric pressure"
-              />
-               <InfoCard
-                title="Max Temp"
-                value={currentConditions.maxTemperature}
-                unit="°C"
-                icon={<ThermometerSun className="size-6 text-muted-foreground" />}
-                description="Today's maximum temperature"
-              />
-              <InfoCard
-                title="Min Temp"
-                value={currentConditions.minTemperature}
-                unit="°C"
-                icon={<ThermometerSnowflake className="size-6 text-muted-foreground" />}
-                description="Today's minimum temperature"
               />
             </>
           )}
         </div>
 
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           {isLoading || !currentConditions ? (
               <>
                 <Skeleton className="h-[350px] w-full" />
                 <Skeleton className="h-[350px] w-full" />
-                <Skeleton className="h-[350px] w-full" />
-                <Skeleton className="h-[350px] w-full lg:col-span-1" />
               </>
             ) : (
               <>
@@ -189,13 +152,7 @@ export default function Home() {
                   airQuality={currentConditions.airQuality}
                   summary={airQualitySummary}
                 />
-                 <ClimateIndexCard currentConditions={currentConditions} />
                 <ForecastTabs daily={dailyForecast} hourly={hourlyForecast} />
-                <div className="lg:col-span-3">
-                  <AreaHealthAnalysisCard
-                    currentConditions={currentConditions}
-                  />
-                </div>
               </>
            )}
         </div>
@@ -207,5 +164,31 @@ export default function Home() {
         />
       </main>
     </div>
+  );
+}
+
+
+export default function Home() {
+  const { user, isUserLoading } = useUser();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!isUserLoading && !user) {
+      router.push('/login');
+    }
+  }, [user, isUserLoading, router]);
+
+  if (isUserLoading || !user) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <Skeleton className="h-24 w-24 rounded-full" />
+      </div>
+    );
+  }
+
+  return (
+    <Suspense fallback={<Skeleton className="h-full w-full" />}>
+      <DashboardPage />
+    </Suspense>
   );
 }
