@@ -8,9 +8,6 @@ import {
   SidebarHeader,
   SidebarFooter,
   SidebarTrigger,
-  SidebarMenuSub,
-  SidebarMenuSubItem,
-  SidebarMenuSubButton,
 } from '@/components/ui/sidebar';
 import {
   Bell,
@@ -20,7 +17,6 @@ import {
   LogOut,
   AirVent,
   ChevronsLeft,
-  Users,
   GitCompare,
   CalendarDays,
   MessageSquare,
@@ -31,11 +27,6 @@ import Link from 'next/link';
 import { useFirebase } from '@/firebase';
 import { useRouter } from 'next/navigation';
 import { Button } from './ui/button';
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from '@/components/ui/collapsible';
 
 const sidebarNav = [
   {
@@ -58,18 +49,15 @@ const sidebarNav = [
     href: '/compare',
     icon: GitCompare,
   },
-];
-
-const communityNav = [
   {
     title: 'Events',
-    href: '/community/events',
-    icon: CalendarDays
+    href: '/events',
+    icon: CalendarDays,
   },
   {
     title: 'Posts',
-    href: '/community/posts',
-    icon: MessageSquare
+    href: '/posts',
+    icon: MessageSquare,
   },
 ];
 
@@ -109,30 +97,6 @@ export default function AppSidebar() {
               </SidebarMenuButton>
             </SidebarMenuItem>
           ))}
-          <Collapsible>
-            <CollapsibleTrigger asChild>
-                <SidebarMenuButton>
-                    <Users />
-                    <span className="group-data-[collapsible=icon]:hidden">Community</span>
-                </SidebarMenuButton>
-            </CollapsibleTrigger>
-            <CollapsibleContent className="data-[state=closed]:animate-none">
-              <SidebarMenuSub>
-                {communityNav.map((item) => (
-                  <SidebarMenuSubItem key={item.title}>
-                    <SidebarMenuSubButton
-                      asChild
-                      isActive={pathname.startsWith(item.href)}
-                    >
-                      <Link href={item.href}>
-                        {item.title}
-                      </Link>
-                    </SidebarMenuSubButton>
-                  </SidebarMenuSubItem>
-                ))}
-              </SidebarMenuSub>
-            </CollapsibleContent>
-          </Collapsible>
           <SidebarMenuItem>
             <SidebarMenuButton asChild isActive={pathname === '/profile'}>
               <Link href="/profile">
