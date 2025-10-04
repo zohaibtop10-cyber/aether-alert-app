@@ -1,152 +1,118 @@
 /**
- * @fileoverview Firestore Security Rules for the EcoBot application.
+ * @fileoverview Firestore Security Rules for EcoBot Application
  *
  * Core Philosophy:
- * This ruleset prioritizes user data protection by enforcing strict ownership-based access control for user-specific data.
- * Community-generated content (blog posts, articles, and data uploads) is publicly readable but restricted to owner-only writes.
+ * This ruleset prioritizes a secure, owner-centric data model.  User data is generally private and only accessible to the authenticated user. Public data (events, posts) is readable by all but writable only by authenticated, authorized users.
  *
  * Data Structure:
- * - User profiles and chat history are nested under /users/{userId}.
- * - Alerts are stored in a top-level /alerts collection.
- * - Community content (blog posts, articles, data uploads) resides in top-level collections.
+ * - /users/{userId}:  Stores profile data, secured with owner-only access.
+ * - /users/{userId}/chatHistory/{messageId}: Chat history, secured with owner-only access.
+ * - /alerts/{alertId}: Alerts for all users.
+ * - /events/{eventId}: Public community events, readable by all, writable by authorized users.
+ * - /posts/{postId}: Public community posts, readable by all, writable by authorized users.
  *
  * Key Security Decisions:
- * - User listing is disabled.
- * - Ambiguous relationships default to owner-only access.
- * - Public read access is granted to community-generated content to foster knowledge sharing, but writes are strictly controlled.
- *
- * Denormalization for Authorization:
- * - Community content (blog posts, articles, and data uploads) requires an 'authorId' or 'uploaderId' field, respectively, to enable owner-only write rules.
- *   The rules validate that `request.auth.uid` matches this `authorId` or `uploaderId` on create and that the existing document's `authorId` or `uploaderId` matches on update and delete.
+ * - User listing is generally disallowed.
+ * - Public data (events, posts) is readable by all users, including unauthenticated users.
+ * - Ambiguous relationships default to strict owner-only access.
+ * - To reduce rule complexity and improve performance, data required for authorization (e.g., ownership) is denormalized directly into the documents.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Checks if the user is signed in.
-     * @example isSignedIn() == true if request.auth != null
-     * @principle Authentication is required for secure access.
-     */
-    function isSignedIn() {
-      return request.auth != null;
-    }
-
-    /**
-     * @description Checks if the authenticated user is the owner of the resource.
-     * @param {string} userId - The user ID to compare against the request's authentication UID.
-     * @example isOwner("someUserId") == true if request.auth.uid == "someUserId"
-     * @principle Enforces user ownership for data access.
-     */
-    function isOwner(userId) {
-      return isSignedIn() && request.auth.uid == userId;
-    }
-
-    /**
-     * @description Checks if the authenticated user is the owner of the existing resource.
-     *              AND that the document exists.
-     * @param {string} userId - The user ID to compare against the request's authentication UID.
-     * @example isExistingOwner("someUserId") == true if request.auth.uid == "someUserId" && resource != null
-     * @principle Enforces user ownership and document existence for data access.
-     */
-    function isExistingOwner(userId) {
-        return isOwner(userId) && resource != null;
-    }
-
-    /**
-     * @description Rules for user profile documents.
+     * @description Grants owner-only access to user profile data.
      * @path /users/{userId}
-     * @allow (create) - Authenticated user with matching UID can create their profile.
-     * @allow (get, update, delete) - Authenticated user with matching UID can access and modify their profile.
-     * @deny (create) - Unauthorized user attempts to create a profile with a mismatched UID.
-     * @deny (list) - Listing users is not allowed.
-     * @principle Enforces document ownership for writes and prevents unauthorized access.
+     * @allow (create) User with UID 'eep8KGiMBhNQmFI2kCidwZ3nWs03' can create a profile with document ID 'eep8KGiMBhNQmFI2kCidwZ3nWs03'.
+     * @deny (create) User with UID 'eep8KGiMBhNQmFI2kCidwZ3nWs03' cannot create a profile with document ID 'differentUserId'.
+     * @principle Enforces user-ownership for profile data.
      */
     match /users/{userId} {
       allow get: if isOwner(userId);
-      allow list: if false;
-      allow create: if isOwner(userId) && request.resource.data.email == request.auth.token.email;
-      allow update: if isExistingOwner(userId) && request.resource.data.email == resource.data.email;
+      allow list: if false; // User listing is not permitted.
+      allow create: if isSelfCreation(userId);
+      allow update: if isExistingOwner(userId);
       allow delete: if isExistingOwner(userId);
     }
 
     /**
-     * @description Rules for chat history messages within a user's profile.
+     * @description Grants owner-only access to chat history for a specific user.
      * @path /users/{userId}/chatHistory/{messageId}
-     * @allow (create, get, update, delete, list) - Authenticated user with matching UID can manage their chat history.
-     * @deny (create, get, update, delete, list) - Unauthorized user attempts to access another user's chat history.
-     * @principle Enforces document ownership for all operations.
+     * @allow (create) User with UID 'eep8KGiMBhNQmFI2kCidwZ3nWs03' can create chat message under their own user ID.
+     * @deny (create) User with UID 'eep8KGiMBhNQmFI2kCidwZ3nWs03' cannot create chat message under a different user ID.
+     * @principle Restricts chat history access to the owning user.
      */
     match /users/{userId}/chatHistory/{messageId} {
-      allow get, list: if isOwner(userId);
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
       allow create: if isOwner(userId);
       allow update: if isExistingOwner(userId);
       allow delete: if isExistingOwner(userId);
     }
 
     /**
-     * @description Rules for alerts.
+     * @description Grants access to alerts data.
      * @path /alerts/{alertId}
-     * @allow (none) - No direct client access; alerts are managed by backend services only.
-     * @principle Restricts client-side access to alerts; managed server-side.
+     * @allow (get) Any user can get an alert.
+     * @deny (create) No one can create an alert without authorization.
+     * @principle Controls access to alert messages.
      */
     match /alerts/{alertId} {
-      allow get: if false;
+      allow get: if true;
       allow list: if false;
-      allow create: if false;
-      allow update: if false;
-      allow delete: if false;
+      allow create: if false; // TODO: Define alert creation rules for authorized services.
+      allow update: if false; // TODO: Define alert update rules for authorized services.
+      allow delete: if false; // TODO: Define alert deletion rules for authorized services.
     }
 
     /**
-     * @description Rules for blog posts.
-     * @path /blogPosts/{postId}
-     * @allow (get, list) - Public read access for all blog posts.
-     * @allow (create) - Authenticated user can create a blog post if the authorId matches their UID.
-     * @allow (update, delete) - Only the author can update or delete their blog post.
-     * @deny (create) - Unauthorized user attempts to create a blog post with a mismatched authorId.
-     * @deny (update, delete) - Unauthorized user attempts to modify or delete another user's blog post.
-     * @principle Public read, owner-only writes, and relational integrity for blog posts.
+     * @description Grants public read access to events, with owner-only write access.
+     * @path /events/{eventId}
+     * @allow (get) Any user can read an event.
+     * @allow (create) Authenticated user can create an event.
+     * @deny (update) Non-owner cannot update an event.
+     * @principle Allows public read access while enforcing ownership for modifications.
      */
-    match /blogPosts/{postId} {
-        allow get, list: if true;
-        allow create: if isSignedIn() && request.resource.data.authorId == request.auth.uid;
-        allow update: if isSignedIn() && resource.data.authorId == request.auth.uid && resource != null;
-        allow delete: if isSignedIn() && resource.data.authorId == request.auth.uid && resource != null;
+    match /events/{eventId} {
+      allow get: if true;
+      allow list: if true;
+      allow create: if isSignedIn(); // Any signed-in user can create an event.
+      allow update: if isExistingOwner(resource.data.organizerId);
+      allow delete: if isExistingOwner(resource.data.organizerId);
     }
 
     /**
-     * @description Rules for articles.
-     * @path /articles/{articleId}
-     * @allow (get, list) - Public read access for all articles.
-     * @allow (create) - Authenticated user can create an article if the authorId matches their UID.
-     * @allow (update, delete) - Only the author can update or delete their article.
-     * @deny (create) - Unauthorized user attempts to create an article with a mismatched authorId.
-     * @deny (update, delete) - Unauthorized user attempts to modify or delete another user's article.
-     * @principle Public read, owner-only writes, and relational integrity for articles.
+     * @description Grants public read access to posts, with owner-only write access.
+     * @path /posts/{postId}
+     * @allow (get) Any user can read a post.
+     * @allow (create) Authenticated user can create a post.
+     * @deny (update) Non-owner cannot update a post.
+     * @principle Allows public read access while enforcing ownership for modifications.
      */
-    match /articles/{articleId} {
-        allow get, list: if true;
-        allow create: if isSignedIn() && request.resource.data.authorId == request.auth.uid;
-        allow update: if isSignedIn() && resource.data.authorId == request.auth.uid && resource != null;
-        allow delete: if isSignedIn() && resource.data.authorId == request.auth.uid && resource != null;
+    match /posts/{postId} {
+      allow get: if true;
+      allow list: if true;
+      allow create: if isSignedIn(); // Any signed-in user can create a post.
+      allow update: if isExistingOwner(resource.data.authorId);
+      allow delete: if isExistingOwner(resource.data.authorId);
     }
 
-    /**
-     * @description Rules for data uploads.
-     * @path /dataUploads/{uploadId}
-     * @allow (get, list) - Public read access for all data uploads.
-     * @allow (create) - Authenticated user can create a data upload if the uploaderId matches their UID.
-     * @allow (update, delete) - Only the uploader can update or delete their data upload.
-     * @deny (create) - Unauthorized user attempts to create a data upload with a mismatched uploaderId.
-     * @deny (update, delete) - Unauthorized user attempts to modify or delete another user's data upload.
-     * @principle Public read, owner-only writes, and relational integrity for data uploads.
-     */
-    match /dataUploads/{uploadId} {
-        allow get, list: if true;
-        allow create: if isSignedIn() && request.resource.data.uploaderId == request.auth.uid;
-        allow update: if isSignedIn() && resource.data.uploaderId == request.auth.uid && resource != null;
-        allow delete: if isSignedIn() && resource.data.uploaderId == request.auth.uid && resource != null;
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+
+    function isExistingOwner(userId) {
+        return isSignedIn() && isOwner(userId) && resource != null;
+    }
+
+    function isSelfCreation(userId) {
+        return isSignedIn() && request.auth.uid == userId && request.resource.data.id == userId;
     }
   }
 }
