@@ -15,6 +15,7 @@ import type { CurrentConditions, HistoricalDataPoint } from '@/lib/types';
 import { Card, CardHeader, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useLocation } from '@/hooks/use-location';
+import { PermissionsDialog } from '@/components/permissions-dialog';
 
 
 const getAirQualitySummary = (
@@ -39,12 +40,21 @@ const getAirQualitySummary = (
 function DashboardPage() {
   const { location, isLocating, error } = useLocation();
   const [isPending, startTransition] = useTransition();
+  const [showPermissionsDialog, setShowPermissionsDialog] = useState(false);
 
   const [currentConditions, setCurrentConditions] = useState<CurrentConditions | null>(null);
   const [apiError, setApiError] = useState<string | null>(null);
   
   const [historicalData7d, setHistoricalData7d] = useState<HistoricalDataPoint[]>([]);
   const [historicalData30d, setHistoricalData30d] = useState<HistoricalDataPoint[]>([]);
+
+  useEffect(() => {
+    // Check if we should show the permissions dialog
+    const permissionsRequested = localStorage.getItem('permissionsRequested');
+    if (!permissionsRequested) {
+      setShowPermissionsDialog(true);
+    }
+  }, []);
 
   useEffect(() => {
     if (location) {
@@ -75,6 +85,11 @@ function DashboardPage() {
     }
   }, [location]);
 
+  const handlePermissionsDialogClose = () => {
+    localStorage.setItem('permissionsRequested', 'true');
+    setShowPermissionsDialog(false);
+  };
+
   const airQualitySummary = getAirQualitySummary(currentConditions?.airQuality);
   const dailyForecast = currentConditions?.dailyForecast || [];
   const hourlyForecast = currentConditions?.hourlyForecast || [];
@@ -82,6 +97,7 @@ function DashboardPage() {
 
   return (
     <div className="flex min-h-screen w-full flex-col bg-background text-foreground">
+      <PermissionsDialog open={showPermissionsDialog} onOpenChange={setShowPermissionsDialog} onDialogClose={handlePermissionsDialogClose} />
       <Header />
       <main className="flex flex-1 flex-col gap-6 p-4 md:p-6 lg:p-8">
         {error && (

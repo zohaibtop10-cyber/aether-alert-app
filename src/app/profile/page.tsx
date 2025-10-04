@@ -43,14 +43,16 @@ const profileSchema = z.object({
   country: z.string().nonempty({ message: 'Please select a country.' }),
   city: z.string().nonempty({ message: 'Please select a city.' }),
   healthConditions: z.string().max(100).optional(),
+  locationEnabled: z.boolean().default(true),
   notificationsEnabled: z.boolean().default(true),
 });
 
 export default function ProfilePage() {
   const { user, isUserLoading } = useUser();
   const { firestore } = useFirebase();
-  const { location, setManualLocation } = useLocation();
+  const { location, setManualLocation, requestLocation, isLocationEnabled } = useLocation();
   const [isLoading, setIsLoading] = useState(false);
+  const [notificationPermission, setNotificationPermission] = useState('default');
   const { toast } = useToast();
 
   const form = useForm<z.infer<typeof profileSchema>>({
@@ -60,6 +62,7 @@ export default function ProfilePage() {
       country: '',
       city: '',
       healthConditions: '',
+      locationEnabled: true,
       notificationsEnabled: true,
     },
   });
@@ -74,21 +77,77 @@ export default function ProfilePage() {
         country: location.country || '',
         city: location.city || '',
         healthConditions: location.disease || '',
-        notificationsEnabled: true, // Default to on
+        locationEnabled: isLocationEnabled,
+        notificationsEnabled: Notification.permission === 'granted',
       });
     }
-  }, [user, location, form]);
+     if (typeof window !== 'undefined' && 'Notification' in window) {
+      setNotificationPermission(Notification.permission);
+    }
+  }, [user, location, form, isLocationEnabled]);
+  
+  const handleNotificationToggle = async (checked: boolean) => {
+    if (checked) {
+      if (Notification.permission === 'granted') {
+        // Already granted
+        return;
+      }
+      if (Notification.permission === 'denied') {
+        toast({
+          variant: 'destructive',
+          title: 'Notification Permission Denied',
+          description: 'Please enable notifications in your browser settings.',
+        });
+        form.setValue('notificationsEnabled', false);
+        return;
+      }
+      const permission = await Notification.requestPermission();
+      setNotificationPermission(permission);
+      if (permission === 'granted') {
+        toast({
+          title: 'Notifications Enabled',
+          description: 'You will now receive climate alerts.',
+        });
+        form.setValue('notificationsEnabled', true);
+        // Here you would get the FCM token and save it
+      } else {
+        form.setValue('notificationsEnabled', false);
+      }
+    } else {
+       // The user is disabling it in the UI, no browser permission change needed.
+       // You might want to remove the FCM token from the server here.
+    }
+  };
+
+  const handleLocationToggle = (checked: boolean) => {
+    if (checked) {
+      requestLocation();
+    } else {
+        toast({
+          title: 'Location Turned Off',
+          description: 'Using default location. Turn back on to use your current location.',
+        });
+    }
+  }
+
 
   async function onSubmit(values: z.infer<typeof profileSchema>) {
     if (!user) return;
     setIsLoading(true);
 
     const userRef = doc(firestore, 'users', user.uid);
-    const userData = {
+    const userData: any = {
       name: values.name,
       email: user.email,
       healthConditions: values.healthConditions,
     };
+    
+    // In a real app, you would get the FCM token if notifications are enabled
+    if (values.notificationsEnabled && notificationPermission === 'granted') {
+        // This is a placeholder for getting the actual token
+        userData.deviceToken = 'placeholder-fcm-token-for-' + user.uid;
+    }
+
 
     setDoc(userRef, userData, { merge: true })
       .then(() => {
@@ -156,7 +215,7 @@ export default function ProfilePage() {
             <CardHeader>
               <CardTitle>Personal Information</CardTitle>
               <CardDescription>
-                Update your name and location settings.
+                Update your name and location settings. Your selected city will be used for weather data.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -226,25 +285,34 @@ export default function ProfilePage() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Health & Notifications</CardTitle>
+              <CardTitle>Permissions & Health</CardTitle>
               <CardDescription>
-                Provide health info for personalized alerts and manage notifications.
+                Provide health info for personalized alerts and manage permissions.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <FormField
+               <FormField
                 control={form.control}
-                name="healthConditions"
+                name="locationEnabled"
                 render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Health Conditions (Optional)</FormLabel>
+                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                    <div className="space-y-0.5">
+                      <FormLabel className="text-base">
+                        Use My Current Location
+                      </FormLabel>
+                      <p className="text-sm text-muted-foreground">
+                        Allow the app to use your device's location for real-time data.
+                      </p>
+                    </div>
                     <FormControl>
-                      <Input
-                        placeholder="e.g., Asthma, Allergies"
-                        {...field}
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={(checked) => {
+                            field.onChange(checked);
+                            handleLocationToggle(checked);
+                        }}
                       />
                     </FormControl>
-                     <FormMessage />
                   </FormItem>
                 )}
               />
@@ -264,9 +332,29 @@ export default function ProfilePage() {
                     <FormControl>
                       <Switch
                         checked={field.value}
-                        onCheckedChange={field.onChange}
+                        onCheckedChange={(checked) => {
+                            field.onChange(checked);
+                            handleNotificationToggle(checked);
+                        }}
+                        disabled={notificationPermission === 'denied'}
                       />
                     </FormControl>
+                  </FormItem>
+                )}
+              />
+               <FormField
+                control={form.control}
+                name="healthConditions"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Health Conditions (Optional)</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="e.g., Asthma, Allergies"
+                        {...field}
+                      />
+                    </FormControl>
+                     <FormMessage />
                   </FormItem>
                 )}
               />
