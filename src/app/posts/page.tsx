@@ -221,9 +221,9 @@ export default function PostsPage() {
         if (!posts) return [];
         return posts.filter(post => 
             (selectedCategory === 'All' || post.category === selectedCategory) &&
-            (post.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            post.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            post.authorName.toLowerCase().includes(searchQuery.toLowerCase()))
+            ((post.title || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+            (post.description || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+            (post.authorName || '').toLowerCase().includes(searchQuery.toLowerCase()))
         );
     }, [posts, searchQuery, selectedCategory]);
 
