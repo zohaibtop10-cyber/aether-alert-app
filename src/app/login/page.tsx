@@ -65,7 +65,6 @@ export default function LoginPage() {
 
   async function onSubmit(values: z.infer<typeof loginSchema>) {
     setIsLoading(true);
-    // Non-blocking call
     signInWithEmailAndPassword(auth, values.email, values.password).catch(
       (error: any) => {
         toast({
@@ -84,7 +83,6 @@ export default function LoginPage() {
   const handleGoogleSignIn = async () => {
     setIsLoading(true);
     const provider = new GoogleAuthProvider();
-    // Non-blocking call
     signInWithPopup(auth, provider)
       .then(async (result) => {
         const user = result.user;
@@ -94,7 +92,7 @@ export default function LoginPage() {
           email: user.email,
         };
 
-        // Ensure user document exists in Firestore
+        // Non-blocking write with error handling
         setDoc(userRef, userData, { merge: true }).catch((error) => {
           const permissionError = new FirestorePermissionError({
             path: userRef.path,

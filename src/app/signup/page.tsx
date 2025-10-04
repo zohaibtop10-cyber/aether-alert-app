@@ -80,6 +80,7 @@ export default function SignupPage() {
           email: values.email,
         };
         
+        // Non-blocking write with error handling
         setDoc(userRef, userData, { merge: true }).catch((error) => {
           const permissionError = new FirestorePermissionError({
             path: userRef.path,
@@ -115,6 +116,7 @@ export default function SignupPage() {
           email: user.email,
         };
 
+        // Non-blocking write with error handling
         setDoc(userRef, userData, { merge: true }).catch((error) => {
           const permissionError = new FirestorePermissionError({
             path: userRef.path,

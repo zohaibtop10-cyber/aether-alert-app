@@ -35,6 +35,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
+import { FirestorePermissionError } from '@/firebase/errors';
+import { errorEmitter } from '@/firebase/error-emitter';
 
 const profileSchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -81,41 +83,49 @@ export default function ProfilePage() {
     if (!user) return;
     setIsLoading(true);
 
-    try {
-      const userRef = doc(firestore, 'users', user.uid);
-      await setDoc(userRef, {
+    const userRef = doc(firestore, 'users', user.uid);
+    const userData = {
         name: values.name,
         email: user.email,
         healthConditions: values.healthConditions,
-      }, { merge: true });
+    };
 
-      const selectedCountryData = countries.find(c => c.name === values.country);
-      const selectedCityData = selectedCountryData?.cities.find(city => city.name === values.city);
+    setDoc(userRef, userData, { merge: true })
+      .then(() => {
+        const selectedCountryData = countries.find(c => c.name === values.country);
+        const selectedCityData = selectedCountryData?.cities.find(city => city.name === values.city);
 
-      if (selectedCityData) {
-          setManualLocation({
-              lat: selectedCityData.lat,
-              lon: selectedCityData.lon,
-              country: values.country,
-              city: values.city,
-              disease: values.healthConditions || ''
-          });
-      }
-
-      toast({
-        title: 'Profile Updated',
-        description: 'Your information has been saved successfully.',
+        if (selectedCityData) {
+            setManualLocation({
+                lat: selectedCityData.lat,
+                lon: selectedCityData.lon,
+                country: values.country,
+                city: values.city,
+                disease: values.healthConditions || ''
+            });
+        }
+        
+        toast({
+            title: 'Profile Updated',
+            description: 'Your information has been saved successfully.',
+        });
+      })
+      .catch((error) => {
+        const permissionError = new FirestorePermissionError({
+            path: userRef.path,
+            operation: 'write',
+            requestResourceData: userData,
+        });
+        errorEmitter.emit('permission-error', permissionError);
+        toast({
+            variant: 'destructive',
+            title: 'Update Failed',
+            description: 'Could not save your profile. Please check permissions.',
+        });
+      })
+      .finally(() => {
+        setIsLoading(false);
       });
-    } catch (error) {
-      console.error("Error updating profile:", error);
-      toast({
-        variant: 'destructive',
-        title: 'Update Failed',
-        description: 'Could not save your profile. Please try again.',
-      });
-    } finally {
-      setIsLoading(false);
-    }
   }
   
   if (isUserLoading || !location) {
@@ -202,7 +212,7 @@ export default function ProfilePage() {
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select a city" />
-                        </SelectTrigger>
+                        </TriggerTrigger>
                       </FormControl>
                       <SelectContent>
                         {cities.map((city) => (

@@ -4,8 +4,10 @@ import { ecoBot } from '@/ai/flows/eco-bot';
 import { streamText } from '@genkit-ai/ai';
 import { CoreMessage } from '@genkit-ai/ai/message';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
-import { initializeFirebase } from '@/firebase/server'; // Use server-side init
+import { initializeFirebase } from '@/firebase/server';
 import { createStreamableValue } from 'ai/rsc';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 export async function askEcoBot(
   history: CoreMessage[],
@@ -13,7 +15,7 @@ export async function askEcoBot(
   uid: string | null
 ) {
   'use server';
-  const { firestore } = await initializeFirebase(); // Now an async call
+  const { firestore } = await initializeFirebase();
   const stream = createStreamableValue();
 
   (async () => {
@@ -53,10 +55,19 @@ Your purpose is to provide users with accurate, real-time environmental data and
           firestore,
           `users/${uid}/chatHistory`
         );
-        await addDoc(userChatHistoryRef, {
+        const userMessageData = {
           role: 'user',
           content: userMessage.content[0].text,
           timestamp: serverTimestamp(),
+        };
+        // Non-blocking write with error handling
+        addDoc(userChatHistoryRef, userMessageData).catch(error => {
+            const permissionError = new FirestorePermissionError({
+                path: userChatHistoryRef.path,
+                operation: 'create',
+                requestResourceData: userMessageData,
+            });
+            errorEmitter.emit('permission-error', permissionError);
         });
       }
     }
@@ -67,10 +78,19 @@ Your purpose is to provide users with accurate, real-time environmental data and
         firestore,
         `users/${uid}/chatHistory`
       );
-      await addDoc(modelChatHistoryRef, {
-        role: 'model',
-        content: fullResponse,
-        timestamp: serverTimestamp(),
+      const modelMessageData = {
+          role: 'model',
+          content: fullResponse,
+          timestamp: serverTimestamp(),
+      };
+      // Non-blocking write with error handling
+      addDoc(modelChatHistoryRef, modelMessageData).catch(error => {
+          const permissionError = new FirestorePermissionError({
+              path: modelChatHistoryRef.path,
+              operation: 'create',
+              requestResourceData: modelMessageData,
+          });
+          errorEmitter.emit('permission-error', permissionError);
       });
     }
 

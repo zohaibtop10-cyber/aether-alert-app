@@ -21,6 +21,11 @@ import {
   LogOut,
   AirVent,
   ChevronsLeft,
+  Users,
+  BookOpen,
+  Newspaper,
+  GitCompare,
+  Database,
 } from 'lucide-react';
 import { ThemeToggle } from './theme-toggle';
 import { usePathname } from 'next/navigation';
@@ -29,6 +34,11 @@ import { useFirebase } from '@/firebase';
 import { useRouter } from 'next/navigation';
 import { Button } from './ui/button';
 import { useState } from 'react';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible';
 
 const sidebarNav = [
   {
@@ -46,12 +56,30 @@ const sidebarNav = [
     href: '/history',
     icon: LineChart,
   },
-  {
-    title: 'Profile',
-    href: '/profile',
-    icon: User,
-  },
 ];
+
+const communityNav = [
+  {
+    title: 'Blog Posts',
+    href: '/community/blog',
+    icon: BookOpen,
+  },
+  {
+    title: 'Articles',
+    href: '/community/articles',
+    icon: Newspaper,
+  },
+  {
+    title: 'Compare',
+    href: '/community/compare',
+    icon: GitCompare,
+  },
+  {
+    title: 'Data',
+    href: '/community/data',
+    icon: Database,
+  },
+]
 
 export default function AppSidebar() {
   const pathname = usePathname();
@@ -89,6 +117,33 @@ export default function AppSidebar() {
               </Link>
             </SidebarMenuItem>
           ))}
+           <Collapsible>
+              <CollapsibleTrigger asChild>
+                 <SidebarMenuButton icon={<Users />}>
+                  Community
+                </SidebarMenuButton>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <SidebarMenuSub>
+                  {communityNav.map((item) => (
+                     <SidebarMenuSubItem key={item.title}>
+                        <Link href={item.href}>
+                          <SidebarMenuSubButton isActive={pathname === item.href} icon={<item.icon />}>
+                            {item.title}
+                          </SidebarMenuSubButton>
+                        </Link>
+                     </SidebarMenuSubItem>
+                  ))}
+                </SidebarMenuSub>
+              </CollapsibleContent>
+            </Collapsible>
+             <SidebarMenuItem>
+                <Link href="/profile">
+                    <SidebarMenuButton isActive={pathname === "/profile"} icon={<User />}>
+                        Profile
+                    </SidebarMenuButton>
+                </Link>
+             </SidebarMenuItem>
         </SidebarMenu>
       </SidebarContent>
       <SidebarFooter className="flex items-center justify-between">
