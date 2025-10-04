@@ -1,9 +1,5 @@
 'use client';
 
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { Button } from '@/components/ui/button';
 import {
   Card,
   CardContent,
@@ -12,188 +8,17 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { useFirebase, useUser, useCollection, useMemoFirebase } from '@/firebase';
-import { addDoc, collection, serverTimestamp, query, orderBy } from 'firebase/firestore';
-import { useState, useMemo } from 'react';
-import { FirestorePermissionError } from '@/firebase/errors';
-import { errorEmitter } from '@/firebase/error-emitter';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
-import { CalendarIcon, MapPin, PlusCircle, Search } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
+import { CalendarIcon, MapPin, Search, ExternalLink } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format, formatDistanceToNow, addDays, subDays, isWithinInterval, isToday } from 'date-fns';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Calendar } from '@/components/ui/calendar';
-import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
+import { Input } from '@/components/ui/input';
+import { getNasaEvents, AppEvent } from '@/app/actions/get-nasa-events';
+import Link from 'next/link';
 
-const eventSchema = z.object({
-  title: z.string().min(5, 'Title must be at least 5 characters.'),
-  description: z.string().min(20, 'Description must be at least 20 characters.'),
-  location: z.string().min(3, 'Location is required.'),
-  date: z.date({ required_error: 'A date is required.' }),
-});
-
-function CreateEventForm({ setDialogOpen }: { setDialogOpen: (open: boolean) => void }) {
-  const { user } = useUser();
-  const { firestore } = useFirebase();
-  const { toast } = useToast();
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const form = useForm<z.infer<typeof eventSchema>>({
-    resolver: zodResolver(eventSchema),
-    defaultValues: { title: '', description: '', location: '' },
-  });
-
-  async function onSubmit(values: z.infer<typeof eventSchema>) {
-    if (!user) {
-      toast({
-        variant: 'destructive',
-        title: 'Authentication Error',
-        description: 'You must be logged in to create an event.',
-      });
-      return;
-    }
-    setIsSubmitting(true);
-
-    const eventData = {
-      ...values,
-      organizerId: user.uid,
-      organizerName: user.displayName || 'Anonymous',
-      createdAt: serverTimestamp(),
-    };
-
-    const eventsRef = collection(firestore, 'events');
-    addDoc(eventsRef, eventData)
-      .then(() => {
-        toast({
-          title: 'Event Created!',
-          description: 'Your event has been shared with the community.',
-        });
-        form.reset();
-        setDialogOpen(false);
-      })
-      .catch(() => {
-        const permissionError = new FirestorePermissionError({
-          path: eventsRef.path,
-          operation: 'create',
-          requestResourceData: eventData,
-        });
-        errorEmitter.emit('permission-error', permissionError);
-      })
-      .finally(() => {
-        setIsSubmitting(false);
-      });
-  }
-
-  return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        <FormField
-          control={form.control}
-          name="title"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Event Title</FormLabel>
-              <FormControl>
-                <Input placeholder="e.g., Community Park Cleanup" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="date"
-          render={({ field }) => (
-            <FormItem className="flex flex-col">
-              <FormLabel>Event Date</FormLabel>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <FormControl>
-                    <Button
-                      variant={"outline"}
-                      className={cn(
-                        "w-full pl-3 text-left font-normal",
-                        !field.value && "text-muted-foreground"
-                      )}
-                    >
-                      {field.value ? (
-                        format(field.value, "PPP")
-                      ) : (
-                        <span>Pick a date</span>
-                      )}
-                      <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                    </Button>
-                  </FormControl>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={field.value}
-                    onSelect={field.onChange}
-                    disabled={(date) =>
-                      date < new Date() || date > new Date("2100-01-01")
-                    }
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="location"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Location</FormLabel>
-              <FormControl>
-                <Input placeholder="e.g., Central Park, NYC" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="description"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Description</FormLabel>
-              <FormControl>
-                <Textarea
-                  placeholder="Tell us more about the event..."
-                  className="min-h-[150px]"
-                  {...field}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <DialogFooter>
-          <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting ? 'Creating...' : 'Create Event'}
-          </Button>
-        </DialogFooter>
-      </form>
-    </Form>
-  );
-}
-
-function EventList({ events, title }: { events: any[], title: string }) {
+function EventList({ events, title }: { events: AppEvent[], title: string }) {
     if (events.length === 0) {
         return null;
     }
@@ -202,28 +27,31 @@ function EventList({ events, title }: { events: any[], title: string }) {
             <h2 className="text-2xl font-semibold tracking-tight">{title}</h2>
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                  {events.map(event => (
-                    <Card key={event.id}>
+                    <Card key={event.id} className="flex flex-col">
                         <CardHeader>
-                        <CardTitle className="line-clamp-2">{event.title}</CardTitle>
-                        <CardDescription>
-                            Organized by {event.organizerName}
-                        </CardDescription>
+                            <CardTitle className="line-clamp-2">{event.title}</CardTitle>
+                            <CardDescription>
+                                Source: {event.organizerName}
+                            </CardDescription>
                         </CardHeader>
-                        <CardContent className="space-y-3">
-                        <div className="flex items-center text-sm text-muted-foreground">
-                            <CalendarIcon className="mr-2 h-4 w-4" />
-                            <span>{event.date ? format(event.date.toDate(), 'PPP') : 'Date not set'}</span>
-                        </div>
-                        <div className="flex items-center text-sm text-muted-foreground">
-                            <MapPin className="mr-2 h-4 w-4" />
-                            <span>{event.location}</span>
-                        </div>
-                        <p className="line-clamp-3 text-sm">{event.description}</p>
+                        <CardContent className="space-y-3 flex-grow">
+                            <div className="flex items-start text-sm text-muted-foreground">
+                                <CalendarIcon className="mr-2 h-4 w-4 mt-1 shrink-0" />
+                                <span>{event.date ? format(event.date, 'PPP') : 'Date not set'}</span>
+                            </div>
+                            <div className="flex items-start text-sm text-muted-foreground">
+                                <MapPin className="mr-2 h-4 w-4 mt-1 shrink-0" />
+                                <span className="line-clamp-2">{event.location}</span>
+                            </div>
+                            <p className="line-clamp-4 text-sm">{event.description}</p>
                         </CardContent>
-                        <CardFooter>
-                            <p className="text-xs text-muted-foreground">
-                                Posted {event.createdAt ? formatDistanceToNow(event.createdAt.toDate(), { addSuffix: true }) : 'just now'}
+                        <CardFooter className="flex justify-between items-center">
+                             <p className="text-xs text-muted-foreground">
+                                Reported {event.createdAt ? formatDistanceToNow(event.createdAt, { addSuffix: true }) : 'just now'}
                             </p>
+                            <Link href={event.link} target="_blank" rel="noopener noreferrer" className="flex items-center text-xs text-primary hover:underline">
+                                More Info <ExternalLink className="ml-1 h-3 w-3" />
+                            </Link>
                         </CardFooter>
                     </Card>
                 ))}
@@ -234,33 +62,47 @@ function EventList({ events, title }: { events: any[], title: string }) {
 }
 
 export default function EventsPage() {
-  const { firestore } = useFirebase();
   const [searchQuery, setSearchQuery] = useState('');
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const { user } = useUser();
+  const [events, setEvents] = useState<AppEvent[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const { toast } = useToast();
 
-  const eventsQuery = useMemoFirebase(
-    () => firestore ? query(collection(firestore, 'events'), orderBy('date', 'asc')) : null,
-    [firestore]
-  );
-  
-  const { data: events, isLoading } = useCollection<any>(eventsQuery);
+  useEffect(() => {
+    async function loadEvents() {
+        setIsLoading(true);
+        try {
+            const nasaEvents = await getNasaEvents();
+            setEvents(nasaEvents);
+        } catch(e) {
+            toast({
+                variant: 'destructive',
+                title: 'Error fetching events',
+                description: 'Could not load natural event data from NASA.'
+            })
+        } finally {
+            setIsLoading(false);
+        }
+    }
+    loadEvents();
+  }, [toast]);
 
   const { pastEvents, ongoingEvents, upcomingEvents } = useMemo(() => {
     if (!events) return { pastEvents: [], ongoingEvents: [], upcomingEvents: [] };
 
-    const now = new Date();
     const filtered = events.filter(event =>
-        event.title.toLowerCase().includes(searchQuery.toLowerCase())
+        event.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        event.location.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
+    const now = new Date();
     const past = filtered.filter(event => 
-        isWithinInterval(event.date.toDate(), { start: subDays(now, 30), end: subDays(now, 1) })
-    );
-    const ongoing = filtered.filter(event => isToday(event.date.toDate()));
+        isWithinInterval(event.date, { start: subDays(now, 30), end: subDays(now, 1) })
+    ).sort((a,b) => b.date.getTime() - a.date.getTime());
+    const ongoing = filtered.filter(event => isToday(event.date));
     const upcoming = filtered.filter(event => 
-        isWithinInterval(event.date.toDate(), { start: addDays(now, 1), end: addDays(now, 7) })
-    );
+        isWithinInterval(event.date, { start: addDays(now, 1), end: addDays(now, 7) })
+    ).sort((a,b) => a.date.getTime() - b.date.getTime());
+
     return { pastEvents: past, ongoingEvents: ongoing, upcomingEvents: upcoming };
   }, [events, searchQuery]);
 
@@ -270,36 +112,17 @@ export default function EventsPage() {
     <div className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="font-semibold text-3xl">Community Events</h1>
+          <h1 className="font-semibold text-3xl">Natural Events Tracker</h1>
           <p className="text-muted-foreground">
-            Find and share local and virtual climate-related events.
+            Explore recent and ongoing natural events from NASA&apos;s EONET.
           </p>
         </div>
-        {user &&
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <PlusCircle className="mr-2 h-4 w-4" />
-              Create Event
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Create a New Event</DialogTitle>
-              <DialogDescription>
-                Fill out the details below to share your event with the community.
-              </DialogDescription>
-            </DialogHeader>
-            <CreateEventForm setDialogOpen={setIsDialogOpen} />
-          </DialogContent>
-        </Dialog>
-        }
       </div>
       
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
         <Input 
-          placeholder="Filter events..."
+          placeholder="Filter events by title or location..."
           className="pl-10"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
@@ -309,15 +132,20 @@ export default function EventsPage() {
       <div className="space-y-8">
         {isLoading && (
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                {Array.from({ length: 3 }).map((_, i) => (
+                {Array.from({ length: 6 }).map((_, i) => (
                 <Card key={i}>
                     <CardHeader>
                     <Skeleton className="h-6 w-3/4" />
                     <Skeleton className="h-4 w-1/2" />
                     </CardHeader>
                     <CardContent>
-                    <Skeleton className="h-12 w-full" />
+                    <Skeleton className="h-4 w-full mb-2" />
+                    <Skeleton className="h-4 w-full mb-2" />
+                    <Skeleton className="h-10 w-full" />
                     </CardContent>
+                     <CardFooter>
+                        <Skeleton className="h-4 w-1/3" />
+                    </CardFooter>
                 </Card>
                 ))}
             </div>
@@ -334,7 +162,7 @@ export default function EventsPage() {
        {noResults && (
          <div className="text-center text-muted-foreground py-12">
             <p>No events found.</p>
-            <p className="text-sm">{searchQuery ? `Try adjusting your filter.` : 'There are no events in the selected timeframes.'}</p>
+            <p className="text-sm">{searchQuery ? `Try adjusting your filter.` : 'There are no NASA events in the selected timeframes.'}</p>
          </div>
        )}
       </div>
