@@ -4,31 +4,11 @@
  * @fileOverview This file defines a Genkit flow for generating personalized health alerts based on user-specified conditions and realtime environmental data from NASA.
  *
  * - generateHealthAlert - A function that takes a user's health condition and environmental data to generate a health alert.
- * - GenerateHealthAlertInput - The input type for the generateHealthAlert function.
- * - GenerateHealthAlertOutput - The return type for the generateHealthAlert function.
  */
 
 import {ai} from '@/ai/genkit';
-import {z} from 'genkit';
+import { GenerateHealthAlertInputSchema, GenerateHealthAlertOutputSchema, type GenerateHealthAlertInput, type GenerateHealthAlertOutput } from '@/lib/genkit-types';
 
-const GenerateHealthAlertInputSchema = z.object({
-  disease: z
-    .string()
-    .describe('The user-specified disease or health condition.'),
-  temperature: z.number().describe('The current temperature in Celsius.'),
-  humidity: z.number().describe('The current relative humidity percentage.'),
-  airQualityPM25: z.number().describe('The current PM2.5 air quality index.'),
-  airQualityO3: z.number().describe('The current Ozone (O3) air quality index.'),
-  airQualityCO: z.number().describe('The current Carbon Monoxide (CO) air quality index.'),
-  airQualityNO2: z.number().describe('The current Nitrogen Dioxide (NO2) air quality index.'),
-  rainChance: z.number().describe('The chance of rain as a percentage (0-100).'),
-});
-export type GenerateHealthAlertInput = z.infer<typeof GenerateHealthAlertInputSchema>;
-
-const GenerateHealthAlertOutputSchema = z.object({
-  alert: z.string().describe('The generated health alert message.'),
-});
-export type GenerateHealthAlertOutput = z.infer<typeof GenerateHealthAlertOutputSchema>;
 
 const generateHealthAlertFlow = ai.defineFlow(
   {

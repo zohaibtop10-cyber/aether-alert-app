@@ -3,75 +3,54 @@
  * @fileOverview This file defines the AI assistant flow that answers user questions about environmental data.
  *
  * - nasaAssistantFlow - The main Genkit flow function.
- * - NasaAssistantInput - The input type for the flow.
- * - NasaAssistantOutput - The return type for the flow.
  */
 
 import { ai } from '@/ai/genkit';
 import { getHistoricalData } from '@/app/actions/get-historical-data';
 import { getWeatherData } from '@/app/actions/get-weather-data';
 import { z } from 'genkit';
+import {NasaAssistantInput, NasaAssistantOutput} from '@/lib/genkit-types';
 
-const NasaAssistantInputSchema = z.object({
-  query: z.string().describe('The user\'s question about environmental data.'),
-  location: z
-    .object({
-      lat: z.number(),
-      lon: z.number(),
-      city: z.string().optional(),
-      country: z.string().optional(),
-      disease: z.string().optional(),
-    })
-    .describe('The user\'s current geo-location.'),
-});
-export type NasaAssistantInput = z.infer<typeof NasaAssistantInputSchema>;
 
-const NasaAssistantOutputSchema = z.object({
-  answer: z
-    .string()
-    .describe('The generated, helpful answer to the user\'s query.'),
-});
-export type NasaAssistantOutput = z.infer<typeof NasaAssistantOutputSchema>;
+const getHistoricalDataTool = ai.defineTool(
+  {
+    name: 'getHistoricalData',
+    description:
+      'Fetches historical environmental data (temperature, rainfall, pressure) for a location for the past 7 or 30 days. Use this for questions about past trends, averages, or comparisons over time.',
+    inputSchema: z.object({
+      location: z.any().describe("The user's location object."),
+      days: z.enum([7, 30]).describe("The number of days for historical data."),
+    }),
+    outputSchema: z.any(),
+  },
+  async ({ location, days }) => getHistoricalData(location, days)
+);
+
+const getCurrentWeatherTool = ai.defineTool(
+  {
+    name: 'getCurrentWeather',
+    description:
+      'Fetches current weather conditions and daily/hourly forecasts for a location. Use this for any questions about the current weather, "today\'s" weather, or future forecasts.',
+    inputSchema: z.object({ location: z.any().describe("The user's location object.") }),
+    outputSchema: z.any(),
+  },
+  async ({ location }) => getWeatherData(location)
+);
 
 export const nasaAssistantFlow = ai.defineFlow(
   {
     name: 'nasaAssistantFlow',
-    inputSchema: NasaAssistantInputSchema,
-    outputSchema: NasaAssistantOutputSchema,
+    inputSchema: z.object({
+      query: z.string(),
+      location: z.any(),
+    }),
+    outputSchema: z.object({
+      answer: z.string(),
+    }),
   },
   async (input) => {
-    // Tool to get historical data from NASA
-    const getHistoricalDataTool = ai.defineTool(
-      {
-        name: 'getHistoricalData',
-        description:
-          'Fetches historical environmental data (temperature, rainfall, pressure) for a location for the past 7 or 30 days. Use this for questions about past trends, averages, or comparisons over time.',
-        inputSchema: z.object({
-          location: z.any(),
-          days: z.enum([7, 30]),
-        }),
-        outputSchema: z.any(),
-      },
-      async ({ location, days }) => getHistoricalData(location, days)
-    );
-
-    // Tool to get current and forecast data from Open-Meteo
-    const getCurrentWeatherTool = ai.defineTool(
-      {
-        name: 'getCurrentWeather',
-        description:
-          'Fetches current weather conditions and daily/hourly forecasts for a location. Use this for any questions about the current weather, "today\'s" weather, or future forecasts.',
-        inputSchema: z.object({ location: z.any() }),
-        outputSchema: z.any(),
-      },
-      async ({ location }) => getWeatherData(location)
-    );
-
-    const prompt = ai.definePrompt({
-      name: 'nasaAssistantPrompt',
-      input: { schema: NasaAssistantInputSchema },
-      output: { schema: NasaAssistantOutputSchema },
-      system: `You are an expert environmental data analyst. Your role is to answer user questions about weather and climate data.
+    
+    const prompt = `You are an expert environmental data analyst. Your role is to answer user questions about weather and climate data.
 - You have access to two tools: \`getHistoricalData\` for past trends and \`getCurrentWeather\` for current conditions and forecasts.
 - Use the provided data to answer the user's question comprehensively.
 - Be clear, concise, and friendly.
@@ -79,19 +58,27 @@ export const nasaAssistantFlow = ai.defineFlow(
 - When talking about current conditions or forecasts, mention it's from Open-Meteo.
 - If the data is not available or a tool fails, inform the user gracefully that you couldn't retrieve the necessary information.
 - Always provide units for measurements (e.g., °C, mm, kPa).
-- The user is at this location: City: {{location.city}}, Country: {{location.country}}. Use this for context.`,
-      prompt: `The user's question is: "{{query}}"`,
-      tools: [getHistoricalDataTool, getCurrentWeatherTool],
-    });
+- The user is at this location: City: ${input.location.city}, Country: ${input.location.country}. Use this for context.
+The user's question is: "${input.query}"`;
 
-    const { output } = await prompt({
-      ...input,
-      // Pass the whole location object to the tool context.
-      // The tools themselves will pick what they need.
-      toolContext: {
-        location: input.location
+    const llmResponse = await ai.generate({
+      model: 'googleai/gemini-2.5-flash',
+      prompt: prompt,
+      tools: [getHistoricalDataTool, getCurrentWeatherTool],
+      toolConfig: {
+        // Pass location to all tool calls automatically.
+        context: {
+          location: input.location,
+        }
+      },
+      output: {
+        schema: z.object({
+          answer: z.string(),
+        })
       }
     });
+
+    const output = llmResponse.output();
 
     if (!output) {
       return {

@@ -4,52 +4,10 @@
  * @fileOverview This file defines a Genkit flow for generating a public health analysis for a specific area based on environmental conditions.
  *
  * - generateAreaHealthAnalysis - A function that takes environmental data and generates a health score and a ranked list of potential diseases.
- * - GenerateAreaHealthAnalysisInput - The input type for the function.
- * - GenerateAreaHealthAnalysisOutput - The return type for the function.
  */
 
 import { ai } from '@/ai/genkit';
-import { z } from 'genkit';
-
-const GenerateAreaHealthAnalysisInputSchema = z.object({
-  temperature: z.number().describe('The current temperature in Celsius.'),
-  humidity: z.number().describe('The current relative humidity percentage.'),
-  airQualityPM25: z.number().describe('The current PM2.5 air quality index.'),
-  airQualityO3: z.number().describe('The current Ozone (O3) air quality index.'),
-  airQualityCO: z.number().describe('The current Carbon Monoxide (CO) air quality index.'),
-  airQualityNO2: z.number().describe('The current Nitrogen Dioxide (NO2) air quality index.'),
-  windSpeed: z.number().describe('The current wind speed in m/s.'),
-});
-export type GenerateAreaHealthAnalysisInput = z.infer<typeof GenerateAreaHealthAnalysisInputSchema>;
-
-const DiseaseRankSchema = z.object({
-  rank: z.number().describe('The rank of the disease (1, 2, 3).'),
-  name: z.string().describe('The name of the health condition or disease.'),
-  reason: z
-    .string()
-    .describe(
-      'A brief, one-sentence explanation of why this condition is a concern under the current environmental circumstances.'
-    ),
-});
-
-const GenerateAreaHealthAnalysisOutputSchema = z.object({
-  healthScore: z
-    .number()
-    .min(0)
-    .max(100)
-    .describe(
-      'A holistic "health score" for the area on a scale of 0 to 100, where 100 is excellent and 0 is extremely poor. This score should consider all environmental factors.'
-    ),
-  rankedDiseases: z
-    .array(DiseaseRankSchema)
-    .length(3)
-    .describe(
-      'A ranked list of the top 3 potential health concerns for the general population given the conditions.'
-    ),
-});
-export type GenerateAreaHealthAnalysisOutput = z.infer<
-  typeof GenerateAreaHealthAnalysisOutputSchema
->;
+import { GenerateAreaHealthAnalysisInputSchema, GenerateAreaHealthAnalysisOutputSchema, type GenerateAreaHealthAnalysisInput, type GenerateAreaHealthAnalysisOutput } from '@/lib/genkit-types';
 
 const generateAreaHealthAnalysisFlow = ai.defineFlow(
   {
