@@ -35,6 +35,8 @@ import {
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { doc, setDoc } from 'firebase/firestore';
+import { FirestorePermissionError } from '@/firebase/errors';
+import { errorEmitter } from '@/firebase/error-emitter';
 
 const signupSchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -68,22 +70,25 @@ export default function SignupPage() {
 
   async function onSubmit(values: z.infer<typeof signupSchema>) {
     setIsLoading(true);
-    // Non-blocking call
     createUserWithEmailAndPassword(auth, values.email, values.password)
       .then(async (userCredential) => {
-        // Update Firebase Auth profile
         await updateProfile(userCredential.user, { displayName: values.name });
 
-        // Create user document in Firestore
         const userRef = doc(firestore, 'users', userCredential.user.uid);
-        await setDoc(
-          userRef,
-          {
-            name: values.name,
-            email: values.email,
-          },
-          { merge: true }
-        );
+        const userData = {
+          name: values.name,
+          email: values.email,
+        };
+        
+        setDoc(userRef, userData, { merge: true }).catch((error) => {
+          const permissionError = new FirestorePermissionError({
+            path: userRef.path,
+            operation: 'create',
+            requestResourceData: userData,
+          });
+          errorEmitter.emit('permission-error', permissionError);
+          setIsLoading(false);
+        });
       })
       .catch((error: any) => {
         toast({
@@ -101,36 +106,42 @@ export default function SignupPage() {
   const handleGoogleSignIn = async () => {
     setIsLoading(true);
     const provider = new GoogleAuthProvider();
-    // Non-blocking call
     signInWithPopup(auth, provider)
       .then(async (result) => {
         const user = result.user;
-        // Create/update user document in Firestore
         const userRef = doc(firestore, 'users', user.uid);
-        await setDoc(
-          userRef,
-          {
-            name: user.displayName,
-            email: user.email,
-          },
-          { merge: true }
-        );
+        const userData = {
+          name: user.displayName,
+          email: user.email,
+        };
+
+        setDoc(userRef, userData, { merge: true }).catch((error) => {
+          const permissionError = new FirestorePermissionError({
+            path: userRef.path,
+            operation: 'create',
+            requestResourceData: userData,
+          });
+          errorEmitter.emit('permission-error', permissionError);
+          setIsLoading(false);
+        });
       })
       .catch((error: any) => {
-        toast({
-          variant: 'destructive',
-          title: 'Google Sign-In Failed',
-          description: 'Could not sign in with Google. Please try again.',
-        });
+        if (error.code !== 'auth/popup-closed-by-user') {
+          toast({
+            variant: 'destructive',
+            title: 'Google Sign-In Failed',
+            description: 'Could not sign in with Google. Please try again.',
+          });
+        }
         setIsLoading(false);
       });
   };
-  
+
   if (isUserLoading || user) {
     return (
-        <div className="flex h-screen items-center justify-center">
-            <AirVent className="h-12 w-12 animate-spin text-primary" />
-        </div>
+      <div className="flex h-screen items-center justify-center">
+        <AirVent className="h-12 w-12 animate-spin text-primary" />
+      </div>
     );
   }
 

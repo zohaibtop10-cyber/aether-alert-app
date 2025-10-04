@@ -34,6 +34,8 @@ import {
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { doc, setDoc } from 'firebase/firestore';
+import { FirestorePermissionError } from '@/firebase/errors';
+import { errorEmitter } from '@/firebase/error-emitter';
 
 const loginSchema = z.object({
   email: z.string().email({ message: 'Please enter a valid email.' }),
@@ -86,28 +88,41 @@ export default function LoginPage() {
     signInWithPopup(auth, provider)
       .then(async (result) => {
         const user = result.user;
-        // Ensure user document exists in Firestore
         const userRef = doc(firestore, 'users', user.uid);
-        await setDoc(userRef, {
+        const userData = {
           name: user.displayName,
           email: user.email,
-        }, { merge: true });
+        };
+
+        // Ensure user document exists in Firestore
+        setDoc(userRef, userData, { merge: true }).catch((error) => {
+          const permissionError = new FirestorePermissionError({
+            path: userRef.path,
+            operation: 'write',
+            requestResourceData: userData,
+          });
+          errorEmitter.emit('permission-error', permissionError);
+          // We don't toast here, the listener will handle it.
+          setIsLoading(false); // Stop loading on error
+        });
       })
       .catch((error: any) => {
-        toast({
-          variant: 'destructive',
-          title: 'Google Sign-In Failed',
-          description: 'Could not sign in with Google. Please try again.',
-        });
+        if (error.code !== 'auth/popup-closed-by-user') {
+          toast({
+            variant: 'destructive',
+            title: 'Google Sign-In Failed',
+            description: 'Could not sign in with Google. Please try again.',
+          });
+        }
         setIsLoading(false);
       });
   };
-  
+
   if (isUserLoading || user) {
-      return (
-        <div className="flex h-screen items-center justify-center">
-            <AirVent className="h-12 w-12 animate-spin text-primary" />
-        </div>
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <AirVent className="h-12 w-12 animate-spin text-primary" />
+      </div>
     );
   }
 
