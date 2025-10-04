@@ -59,7 +59,7 @@ function EventCard({ event }: { event: ClimateEvent }) {
   }
 
   return (
-    <Card className="flex flex-col hover:-translate-y-1">
+    <Card className="flex flex-col hover:border-primary/50 hover:-translate-y-1">
       <CardHeader>
         <div className="flex justify-between items-start">
           <CardTitle className="line-clamp-2">{event.title}</CardTitle>

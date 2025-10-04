@@ -221,9 +221,9 @@ export default function PostsPage() {
         if (!posts) return [];
         return posts.filter(post => 
             (selectedCategory === 'All' || post.category === selectedCategory) &&
-            ((post.title || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-            (post.description || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-            (post.authorName || '').toLowerCase().includes(searchQuery.toLowerCase()))
+            (((post.title || '').toLowerCase().includes(searchQuery.toLowerCase())) ||
+            ((post.description || '').toLowerCase().includes(searchQuery.toLowerCase())) ||
+            ((post.authorName || '').toLowerCase().includes(searchQuery.toLowerCase())))
         );
     }, [posts, searchQuery, selectedCategory]);
 
@@ -303,7 +303,7 @@ export default function PostsPage() {
 
                 {!isLoading && filteredPosts.map(post => (
                     <motion.div key={post.id} variants={itemVariants}>
-                        <Card className="flex flex-col h-full hover:-translate-y-1">
+                        <Card className="flex flex-col h-full hover:border-primary/50 hover:-translate-y-1">
                             <CardHeader>
                                <div className="flex justify-between items-start gap-2">
                                      <CardTitle className="text-xl line-clamp-2">{post.title}</CardTitle>
