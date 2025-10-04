@@ -51,17 +51,18 @@ export type GenerateAreaHealthAnalysisOutput = z.infer<
   typeof GenerateAreaHealthAnalysisOutputSchema
 >;
 
-export async function generateAreaHealthAnalysis(
-  input: GenerateAreaHealthAnalysisInput
-): Promise<GenerateAreaHealthAnalysisOutput> {
-  return generateAreaHealthAnalysisFlow(input);
-}
-
-const prompt = ai.definePrompt({
-  name: 'generateAreaHealthAnalysisPrompt',
-  input: { schema: GenerateAreaHealthAnalysisInputSchema },
-  output: { schema: GenerateAreaHealthAnalysisOutputSchema },
-  prompt: `You are a public health expert and environmental analyst. Your task is to provide a clear, data-driven assessment of the environmental health of a specific area based on the following data.
+const generateAreaHealthAnalysisFlow = ai.defineFlow(
+  {
+    name: 'generateAreaHealthAnalysisFlow',
+    inputSchema: GenerateAreaHealthAnalysisInputSchema,
+    outputSchema: GenerateAreaHealthAnalysisOutputSchema,
+  },
+  async (input) => {
+    const prompt = ai.definePrompt({
+      name: 'generateAreaHealthAnalysisPrompt',
+      input: { schema: GenerateAreaHealthAnalysisInputSchema },
+      output: { schema: GenerateAreaHealthAnalysisOutputSchema },
+      prompt: `You are a public health expert and environmental analyst. Your task is to provide a clear, data-driven assessment of the environmental health of a specific area based on the following data.
 
 Current Environmental Conditions:
 - Temperature: {{temperature}}°C
@@ -80,16 +81,16 @@ Based on this data, perform the following tasks:
 
 Provide the output in the specified JSON format.
 `,
-});
-
-const generateAreaHealthAnalysisFlow = ai.defineFlow(
-  {
-    name: 'generateAreaHealthAnalysisFlow',
-    inputSchema: GenerateAreaHealthAnalysisInputSchema,
-    outputSchema: GenerateAreaHealthAnalysisOutputSchema,
-  },
-  async (input) => {
+    });
+    
     const { output } = await prompt(input);
     return output!;
   }
 );
+
+
+export async function generateAreaHealthAnalysis(
+  input: GenerateAreaHealthAnalysisInput
+): Promise<GenerateAreaHealthAnalysisOutput> {
+  return generateAreaHealthAnalysisFlow(input);
+}
