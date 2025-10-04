@@ -8,14 +8,25 @@ import { AlertTriangle } from 'lucide-react';
 import Image from 'next/image';
 import { format } from 'date-fns';
 
+// Function to convert Lat/Lon to Tile coordinates for WMTS
+function latLonToTile(lat: number, lon: number, zoom: number): { x: number, y: number } {
+    const n = Math.pow(2, zoom);
+    const latRad = lat * Math.PI / 180;
+    const x = Math.floor(n * ((lon + 180) / 360));
+    const y = Math.floor(n * (1 - (Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI)) / 2);
+    return { x, y };
+}
+
+
 function getGIBSEarthImageUrl(date: Date, lat: number, lon: number): string {
     const formattedDate = format(date, 'yyyy-MM-dd');
-    const boundingBox = [lon - 1, lat - 1, lon + 1, lat + 1].join(',');
+    const zoom = 6;
+    const {x, y} = latLonToTile(lat, lon, zoom);
 
     // Using NASA GIBS Blue Marble layer for a visually clear before/after
-    const layer = 'BlueMarble_Shaded_Relief_Bathymetry';
+    const layer = 'MODIS_Terra_CorrectedReflectance_TrueColor';
 
-    return `https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/${layer}/default/${formattedDate}/GoogleMapsCompatible_Level8/${Math.floor(8 - Math.log2(2))}/${Math.floor(lat / 2)}/${Math.floor(lon / 2)}.jpeg`;
+    return `https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/${layer}/default/${formattedDate}/GoogleMapsCompatible_Level${zoom}/${y}/${x}.jpg`;
 }
 
 export default function ComparePage() {
@@ -31,9 +42,9 @@ export default function ComparePage() {
         if (location && !isLocating) {
             setIsLoading(true);
             try {
-                // Generate URLs for NASA GIBS imagery
-                const afterUrl = `https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/MODIS_Terra_CorrectedReflectance_TrueColor/default/${format(today, 'yyyy-MM-dd')}/GoogleMapsCompatible_Level6/5/19/25.jpg`;
-                const beforeUrl = `https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/MODIS_Terra_CorrectedReflectance_TrueColor/default/${format(oneYearAgo, 'yyyy-MM-dd')}/GoogleMapsCompatible_Level6/5/19/25.jpg`;
+                // Generate URLs for NASA GIBS imagery based on user location
+                const afterUrl = getGIBSEarthImageUrl(today, location.lat, location.lon);
+                const beforeUrl = getGIBSEarthImageUrl(oneYearAgo, location.lat, location.lon);
                 
                 setAfterImageUrl(afterUrl);
                 setBeforeImageUrl(beforeUrl);
@@ -49,8 +60,24 @@ export default function ComparePage() {
         if (isLocating || isLoading) {
             return (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <Skeleton className="h-[400px] w-full" />
-                    <Skeleton className="h-[400px] w-full" />
+                    <Card>
+                        <CardHeader>
+                            <Skeleton className="h-6 w-3/4" />
+                            <Skeleton className="h-4 w-1/2" />
+                        </CardHeader>
+                        <CardContent>
+                            <Skeleton className="aspect-square w-full" />
+                        </CardContent>
+                    </Card>
+                    <Card>
+                        <CardHeader>
+                            <Skeleton className="h-6 w-3/4" />
+                            <Skeleton className="h-4 w-1/2" />
+                        </CardHeader>
+                        <CardContent>
+                            <Skeleton className="aspect-square w-full" />
+                        </CardContent>
+                    </Card>
                 </div>
             );
         }
@@ -87,8 +114,9 @@ export default function ComparePage() {
                             alt="Satellite image from one year ago"
                             width={600}
                             height={600}
-                            className="rounded-lg object-cover"
+                            className="rounded-lg object-cover aspect-square"
                             unoptimized // Required for NASA GIBS which doesn't support optimization
+                            onError={() => setBeforeImageUrl(null)}
                         />
                     </CardContent>
                 </Card>
@@ -103,8 +131,9 @@ export default function ComparePage() {
                             alt="Satellite image from today"
                             width={600}
                             height={600}
-                            className="rounded-lg object-cover"
-                            unoptimized // Required for NASA GIBS which doesn't support optimization
+                            className="rounded-lg object-cover aspect-square"
+                            unoptimized
+                            onError={() => setAfterImageUrl(null)}
                         />
                     </CardContent>
                 </Card>

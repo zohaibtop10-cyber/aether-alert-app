@@ -22,11 +22,7 @@ import {
   ChevronsLeft,
   Users,
   GitCompare,
-  CalendarClock,
   MessageSquare,
-  FileText,
-  Database,
-  House,
 } from 'lucide-react';
 import { ThemeToggle } from './theme-toggle';
 import { usePathname } from 'next/navigation';
@@ -67,22 +63,11 @@ const communityNav = [
   {
     title: 'Events',
     href: '/community/events',
-    icon: CalendarClock,
   },
   {
     title: 'Posts',
     href: '/community/posts',
     icon: MessageSquare,
-  },
-  {
-    title: 'Articles',
-    href: '/community/articles',
-    icon: FileText,
-  },
-  {
-    title: 'Data',
-    href: '/community/data',
-    icon: Database,
   },
 ];
 
@@ -114,9 +99,7 @@ export default function AppSidebar() {
               <SidebarMenuButton asChild isActive={pathname === item.href}>
                 <Link href={item.href}>
                   <item.icon />
-                  <span className="group-data-[collapsible=icon]:hidden">
-                    {item.title}
-                  </span>
+                  {item.title}
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
@@ -137,7 +120,6 @@ export default function AppSidebar() {
                       isActive={pathname.startsWith(item.href)}
                     >
                       <Link href={item.href}>
-                        <item.icon className="h-4 w-4 mr-2" />
                         {item.title}
                       </Link>
                     </SidebarMenuSubButton>

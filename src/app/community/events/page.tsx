@@ -31,10 +31,11 @@ import { errorEmitter } from '@/firebase/error-emitter';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { CalendarIcon, MapPin, PlusCircle, Search } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { format, formatDistanceToNow } from 'date-fns';
+import { format, formatDistanceToNow, addDays, subDays, isWithinInterval, isToday } from 'date-fns';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
+import { Separator } from '@/components/ui/separator';
 
 const eventSchema = z.object({
   title: z.string().min(5, 'Title must be at least 5 characters.'),
@@ -192,6 +193,46 @@ function CreateEventForm({ setDialogOpen }: { setDialogOpen: (open: boolean) => 
   );
 }
 
+function EventList({ events, title }: { events: any[], title: string }) {
+    if (events.length === 0) {
+        return null;
+    }
+    return (
+        <div className="space-y-6">
+            <h2 className="text-2xl font-semibold tracking-tight">{title}</h2>
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                 {events.map(event => (
+                    <Card key={event.id}>
+                        <CardHeader>
+                        <CardTitle className="line-clamp-2">{event.title}</CardTitle>
+                        <CardDescription>
+                            Organized by {event.organizerName}
+                        </CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                        <div className="flex items-center text-sm text-muted-foreground">
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            <span>{event.date ? format(event.date.toDate(), 'PPP') : 'Date not set'}</span>
+                        </div>
+                        <div className="flex items-center text-sm text-muted-foreground">
+                            <MapPin className="mr-2 h-4 w-4" />
+                            <span>{event.location}</span>
+                        </div>
+                        <p className="line-clamp-3 text-sm">{event.description}</p>
+                        </CardContent>
+                        <CardFooter>
+                            <p className="text-xs text-muted-foreground">
+                                Posted {event.createdAt ? formatDistanceToNow(event.createdAt.toDate(), { addSuffix: true }) : 'just now'}
+                            </p>
+                        </CardFooter>
+                    </Card>
+                ))}
+            </div>
+            <Separator className="my-8" />
+        </div>
+    )
+}
+
 export default function EventsPage() {
   const { firestore } = useFirebase();
   const [searchQuery, setSearchQuery] = useState('');
@@ -205,12 +246,25 @@ export default function EventsPage() {
   
   const { data: events, isLoading } = useCollection<any>(eventsQuery);
 
-  const filteredEvents = useMemo(() => {
-    if (!events) return [];
-    return events.filter(event =>
-      event.title.toLowerCase().includes(searchQuery.toLowerCase())
+  const { pastEvents, ongoingEvents, upcomingEvents } = useMemo(() => {
+    if (!events) return { pastEvents: [], ongoingEvents: [], upcomingEvents: [] };
+
+    const now = new Date();
+    const filtered = events.filter(event =>
+        event.title.toLowerCase().includes(searchQuery.toLowerCase())
     );
+
+    const past = filtered.filter(event => 
+        isWithinInterval(event.date.toDate(), { start: subDays(now, 30), end: subDays(now, 1) })
+    );
+    const ongoing = filtered.filter(event => isToday(event.date.toDate()));
+    const upcoming = filtered.filter(event => 
+        isWithinInterval(event.date.toDate(), { start: addDays(now, 1), end: addDays(now, 7) })
+    );
+    return { pastEvents: past, ongoingEvents: ongoing, upcomingEvents: upcoming };
   }, [events, searchQuery]);
+
+  const noResults = !isLoading && !pastEvents.length && !ongoingEvents.length && !upcomingEvents.length;
 
   return (
     <div className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
@@ -252,53 +306,38 @@ export default function EventsPage() {
         />
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {isLoading && Array.from({ length: 3 }).map((_, i) => (
-          <Card key={i}>
-            <CardHeader>
-              <Skeleton className="h-6 w-3/4" />
-              <Skeleton className="h-4 w-1/2" />
-            </CardHeader>
-            <CardContent>
-              <Skeleton className="h-12 w-full" />
-            </CardContent>
-          </Card>
-        ))}
+      <div className="space-y-8">
+        {isLoading && (
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                {Array.from({ length: 3 }).map((_, i) => (
+                <Card key={i}>
+                    <CardHeader>
+                    <Skeleton className="h-6 w-3/4" />
+                    <Skeleton className="h-4 w-1/2" />
+                    </CardHeader>
+                    <CardContent>
+                    <Skeleton className="h-12 w-full" />
+                    </CardContent>
+                </Card>
+                ))}
+            </div>
+        )}
 
-        {!isLoading && filteredEvents.map(event => (
-          <Card key={event.id}>
-            <CardHeader>
-              <CardTitle className="line-clamp-2">{event.title}</CardTitle>
-              <CardDescription>
-                Organized by {event.organizerName}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex items-center text-sm text-muted-foreground">
-                <CalendarIcon className="mr-2 h-4 w-4" />
-                <span>{event.date ? format(event.date.toDate(), 'PPP') : 'Date not set'}</span>
-              </div>
-              <div className="flex items-center text-sm text-muted-foreground">
-                <MapPin className="mr-2 h-4 w-4" />
-                <span>{event.location}</span>
-              </div>
-              <p className="line-clamp-3 text-sm">{event.description}</p>
-            </CardContent>
-             <CardFooter>
-                <p className="text-xs text-muted-foreground">
-                    Posted {event.createdAt ? formatDistanceToNow(event.createdAt.toDate(), { addSuffix: true }) : 'just now'}
-                </p>
-             </CardFooter>
-          </Card>
-        ))}
-      </div>
+        {!isLoading && (
+            <>
+                <EventList events={ongoingEvents} title="Ongoing Events" />
+                <EventList events={upcomingEvents} title="Upcoming (Next 7 Days)" />
+                <EventList events={pastEvents} title="Past (Last 30 Days)" />
+            </>
+        )}
 
-       {!isLoading && filteredEvents.length === 0 && (
+       {noResults && (
          <div className="text-center text-muted-foreground py-12">
             <p>No events found.</p>
-            <p className="text-sm">{searchQuery ? `Try adjusting your filter.` : 'Be the first to create one!'}</p>
+            <p className="text-sm">{searchQuery ? `Try adjusting your filter.` : 'There are no events in the selected timeframes.'}</p>
          </div>
        )}
+      </div>
     </div>
   );
 }
