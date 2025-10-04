@@ -10,7 +10,7 @@ import { ForecastTabs } from '@/components/dashboard/forecast-tabs';
 import { HistoricalChartCard } from '@/components/dashboard/historical-chart-card';
 import { getWeatherData } from './actions/get-weather-data';
 import { getHistoricalData } from './actions/get-historical-data';
-import { Thermometer, Droplets, CloudRain, Wind } from 'lucide-react';
+import { Thermometer, Droplets, CloudRain, Wind, AirVent } from 'lucide-react';
 import type { CurrentConditions, HistoricalDataPoint } from '@/lib/types';
 import { Card, CardHeader, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -181,13 +181,13 @@ export default function Home() {
   if (isUserLoading || !user) {
     return (
       <div className="flex h-screen items-center justify-center">
-        <Skeleton className="h-24 w-24 rounded-full" />
+         <AirVent className="h-12 w-12 animate-spin text-primary" />
       </div>
     );
   }
 
   return (
-    <Suspense fallback={<Skeleton className="h-full w-full" />}>
+    <Suspense fallback={<div className="flex h-screen items-center justify-center"><AirVent className="h-12 w-12 animate-spin text-primary" /></div>}>
       <DashboardPage />
     </Suspense>
   );

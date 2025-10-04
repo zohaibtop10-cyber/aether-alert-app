@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -25,7 +25,7 @@ import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
 import { AirVent, Chrome } from 'lucide-react';
 import Link from 'next/link';
-import { useFirebase } from '@/firebase';
+import { useFirebase, useUser } from '@/firebase';
 import {
   createUserWithEmailAndPassword,
   updateProfile,
@@ -36,16 +36,18 @@ import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { doc, setDoc } from 'firebase/firestore';
 
-
 const signupSchema = z.object({
   name: z.string().min(1, 'Name is required'),
   email: z.string().email({ message: 'Please enter a valid email.' }),
-  password: z.string().min(8, { message: 'Password must be at least 8 characters.' }),
+  password: z
+    .string()
+    .min(8, { message: 'Password must be at least 8 characters.' }),
 });
 
 export default function SignupPage() {
   const [isLoading, setIsLoading] = useState(false);
   const { auth, firestore } = useFirebase();
+  const { user, isUserLoading } = useUser();
   const router = useRouter();
   const { toast } = useToast();
 
@@ -58,72 +60,89 @@ export default function SignupPage() {
     },
   });
 
+  useEffect(() => {
+    if (!isUserLoading && user) {
+      router.push('/');
+    }
+  }, [user, isUserLoading, router]);
+
   async function onSubmit(values: z.infer<typeof signupSchema>) {
     setIsLoading(true);
-    try {
-      const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
-      
-      // Update Firebase Auth profile
-      await updateProfile(userCredential.user, { displayName: values.name });
+    // Non-blocking call
+    createUserWithEmailAndPassword(auth, values.email, values.password)
+      .then(async (userCredential) => {
+        // Update Firebase Auth profile
+        await updateProfile(userCredential.user, { displayName: values.name });
 
-      // Create user document in Firestore
-      const userRef = doc(firestore, 'users', userCredential.user.uid);
-      await setDoc(userRef, {
-        name: values.name,
-        email: values.email,
-      }, { merge: true });
-
-      router.push('/');
-    } catch (error: any) {
-      toast({
-        variant: 'destructive',
-        title: 'Sign Up Failed',
-        description: error.code === 'auth/email-already-in-use' 
-            ? 'This email is already in use. Please try another.' 
-            : 'An unexpected error occurred. Please try again.',
+        // Create user document in Firestore
+        const userRef = doc(firestore, 'users', userCredential.user.uid);
+        await setDoc(
+          userRef,
+          {
+            name: values.name,
+            email: values.email,
+          },
+          { merge: true }
+        );
+      })
+      .catch((error: any) => {
+        toast({
+          variant: 'destructive',
+          title: 'Sign Up Failed',
+          description:
+            error.code === 'auth/email-already-in-use'
+              ? 'This email is already in use. Please try another.'
+              : 'An unexpected error occurred. Please try again.',
+        });
+        setIsLoading(false);
       });
-    } finally {
-      setIsLoading(false);
-    }
   }
 
   const handleGoogleSignIn = async () => {
     setIsLoading(true);
     const provider = new GoogleAuthProvider();
-    try {
-      const result = await signInWithPopup(auth, provider);
-      const user = result.user;
-
-      // Create user document in Firestore if it's a new user
-      const userRef = doc(firestore, 'users', user.uid);
-      await setDoc(userRef, {
-        name: user.displayName,
-        email: user.email,
-      }, { merge: true });
-
-      router.push('/');
-    } catch (error: any) {
-       toast({
-        variant: 'destructive',
-        title: 'Google Sign-In Failed',
-        description: 'Could not sign in with Google. Please try again.',
+    // Non-blocking call
+    signInWithPopup(auth, provider)
+      .then(async (result) => {
+        const user = result.user;
+        // Create/update user document in Firestore
+        const userRef = doc(firestore, 'users', user.uid);
+        await setDoc(
+          userRef,
+          {
+            name: user.displayName,
+            email: user.email,
+          },
+          { merge: true }
+        );
+      })
+      .catch((error: any) => {
+        toast({
+          variant: 'destructive',
+          title: 'Google Sign-In Failed',
+          description: 'Could not sign in with Google. Please try again.',
+        });
+        setIsLoading(false);
       });
-    } finally {
-      setIsLoading(false);
-    }
   };
+  
+  if (isUserLoading || user) {
+    return (
+        <div className="flex h-screen items-center justify-center">
+            <AirVent className="h-12 w-12 animate-spin text-primary" />
+        </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-muted/40 p-4">
       <Card className="w-full max-w-sm">
         <CardHeader className="text-center">
           <div className="mb-4 flex justify-center">
-             <AirVent className="h-10 w-10 text-primary" />
+            <AirVent className="h-10 w-10 text-primary" />
           </div>
           <CardTitle className="text-2xl">Create an Account</CardTitle>
-          <CardDescription>
-            Join MyClimateGuard to stay informed.
-          </CardDescription>
+          <CardDescription>Join MyClimateGuard to stay informed.</CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>
@@ -209,7 +228,10 @@ export default function SignupPage() {
         <CardFooter className="justify-center text-sm">
           <p>
             Already have an account?{' '}
-            <Link href="/login" className="font-medium text-primary hover:underline">
+            <Link
+              href="/login"
+              className="font-medium text-primary hover:underline"
+            >
               Sign In
             </Link>
           </p>

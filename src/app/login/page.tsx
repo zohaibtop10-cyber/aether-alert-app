@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -25,14 +25,15 @@ import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
 import { AirVent, Chrome } from 'lucide-react';
 import Link from 'next/link';
-import { useFirebase } from '@/firebase';
+import { useFirebase, useUser } from '@/firebase';
 import {
-  signInWithEmailAndPassword,
   GoogleAuthProvider,
   signInWithPopup,
+  signInWithEmailAndPassword,
 } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
+import { doc, setDoc } from 'firebase/firestore';
 
 const loginSchema = z.object({
   email: z.string().email({ message: 'Please enter a valid email.' }),
@@ -41,7 +42,8 @@ const loginSchema = z.object({
 
 export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
-  const { auth } = useFirebase();
+  const { auth, firestore } = useFirebase();
+  const { user, isUserLoading } = useUser();
   const router = useRouter();
   const { toast } = useToast();
 
@@ -53,49 +55,68 @@ export default function LoginPage() {
     },
   });
 
+  useEffect(() => {
+    if (!isUserLoading && user) {
+      router.push('/');
+    }
+  }, [user, isUserLoading, router]);
+
   async function onSubmit(values: z.infer<typeof loginSchema>) {
     setIsLoading(true);
-    try {
-      await signInWithEmailAndPassword(auth, values.email, values.password);
-      router.push('/');
-    } catch (error: any) {
-      toast({
-        variant: 'destructive',
-        title: 'Login Failed',
-        description:
-          error.code === 'auth/invalid-credential'
-            ? 'Invalid email or password. Please try again.'
-            : 'An unexpected error occurred. Please try again.',
-      });
-    } finally {
-      setIsLoading(false);
-    }
+    // Non-blocking call
+    signInWithEmailAndPassword(auth, values.email, values.password).catch(
+      (error: any) => {
+        toast({
+          variant: 'destructive',
+          title: 'Login Failed',
+          description:
+            error.code === 'auth/invalid-credential'
+              ? 'Invalid email or password. Please try again.'
+              : 'An unexpected error occurred. Please try again.',
+        });
+        setIsLoading(false);
+      }
+    );
   }
 
   const handleGoogleSignIn = async () => {
     setIsLoading(true);
     const provider = new GoogleAuthProvider();
-    try {
-      await signInWithPopup(auth, provider);
-      router.push('/');
-    } catch (error: any) {
-      toast({
-        variant: 'destructive',
-        title: 'Google Sign-In Failed',
-        description:
-          'Could not sign in with Google. Please try again.',
+    // Non-blocking call
+    signInWithPopup(auth, provider)
+      .then(async (result) => {
+        const user = result.user;
+        // Ensure user document exists in Firestore
+        const userRef = doc(firestore, 'users', user.uid);
+        await setDoc(userRef, {
+          name: user.displayName,
+          email: user.email,
+        }, { merge: true });
+      })
+      .catch((error: any) => {
+        toast({
+          variant: 'destructive',
+          title: 'Google Sign-In Failed',
+          description: 'Could not sign in with Google. Please try again.',
+        });
+        setIsLoading(false);
       });
-    } finally {
-      setIsLoading(false);
-    }
   };
+  
+  if (isUserLoading || user) {
+      return (
+        <div className="flex h-screen items-center justify-center">
+            <AirVent className="h-12 w-12 animate-spin text-primary" />
+        </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-muted/40 p-4">
       <Card className="w-full max-w-sm">
         <CardHeader className="text-center">
           <div className="mb-4 flex justify-center">
-             <AirVent className="h-10 w-10 text-primary" />
+            <AirVent className="h-10 w-10 text-primary" />
           </div>
           <CardTitle className="text-2xl">Welcome Back!</CardTitle>
           <CardDescription>
@@ -169,7 +190,10 @@ export default function LoginPage() {
         <CardFooter className="justify-center text-sm">
           <p>
             Don&apos;t have an account?{' '}
-            <Link href="/signup" className="font-medium text-primary hover:underline">
+            <Link
+              href="/signup"
+              className="font-medium text-primary hover:underline"
+            >
               Sign up
             </Link>
           </p>
