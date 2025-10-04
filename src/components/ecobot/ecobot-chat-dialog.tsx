@@ -93,29 +93,32 @@ export function EcoBotChatDialog({
 
       let fullResponse = '';
       const modelMessageId = nanoid();
-      const modelMessage: CoreMessage = {
-        role: 'model',
-        // @ts-ignore
-        id: modelMessageId,
-        content: '',
-      };
-      setMessages((prev) => [...prev, modelMessage]);
-
+      
+      // We don't add a placeholder message here anymore,
+      // because we optimistically update the UI with db changes.
+      // Let's add an indicator for when we are thinking
+      
       for await (const chunk of readStreamableValue(stream)) {
-        if (typeof chunk === 'string') {
-            fullResponse += chunk;
-            setMessages((prev) =>
-              prev.map((msg) =>
-                // @ts-ignore
-                msg.id === modelMessageId
-                  ? {
-                      ...msg,
-                      content: fullResponse,
-                    }
-                  : msg
-              )
-            );
-        }
+        fullResponse += chunk;
+         setMessages(prev => {
+          // Check if the last message is from the model and we are still streaming
+          const lastMessage = prev[prev.length - 1];
+          if (lastMessage && lastMessage.role === 'model' && lastMessage.id === modelMessageId) {
+            // Update the content of the last message
+            return [
+              ...prev.slice(0, -1),
+              { ...lastMessage, content: fullResponse },
+            ];
+          } else {
+            // It's a new message from the model
+            const modelMessage: CoreMessage & { id: string } = {
+              role: 'model',
+              id: modelMessageId,
+              content: fullResponse,
+            };
+            return [...prev, modelMessage];
+          }
+        });
       }
     } catch (error) {
       console.error('Error during chat:', error);
@@ -129,9 +132,9 @@ export function EcoBotChatDialog({
     }
   };
 
-  const renderMessage = (m: CoreMessage, i: number) => (
+  const renderMessage = (m: CoreMessage & {id?: string}, i: number) => (
      <div
-        key={i}
+        key={m.id || i}
         className={cn(
           'flex items-start gap-3',
           m.role === 'user' ? 'justify-end' : 'justify-start'
@@ -153,7 +156,7 @@ export function EcoBotChatDialog({
           )}
         >
           <p className="text-sm whitespace-pre-wrap">
-            {typeof m.content === 'string' ? m.content : m.content[0].text}
+            {typeof m.content === 'string' ? m.content : ''}
           </p>
         </div>
         {m.role === 'user' && (
@@ -206,7 +209,7 @@ export function EcoBotChatDialog({
                 messages.map(renderMessage)
             )}
             
-            {isLoading && messages[messages.length - 1]?.role === 'user' && (
+            {isLoading && (
                 renderThinkingIndicator()
             )}
           </div>

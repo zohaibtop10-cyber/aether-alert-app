@@ -20,22 +20,23 @@ export async function askEcoBot(
   const { firestore } = await initializeFirebase();
   const stream = createStreamableValue();
 
-  (async () => {
-    const userMessage = history.findLast(m => m.role === 'user');
+  const userMessage = history.findLast(m => m.role === 'user');
+  const userMessageContent = userMessage?.content as string;
 
-    if (userMessage?.content[0].text) {
-      callMakeWebhook({
-        data: {
-          userInput: userMessage.content[0].text,
-          location: location,
-          uid: uid,
-        },
-      });
-    }
+  // Non-blocking call to the webhook
+  if (userMessageContent) {
+    callMakeWebhook({
+      data: {
+        userInput: userMessageContent,
+        location: location,
+        uid: uid,
+      },
+    });
+  }
 
-    const { stream: textStream } = await streamText({
-      model: googleAI('gemini-1.5-pro'),
-      system: `You are EcoAI, a NASA-powered climate and environment assistant.
+  streamText({
+    model: googleAI('gemini-1.5-pro'),
+    system: `You are EcoAI, a NASA-powered climate and environment assistant.
 Your purpose is to provide users with accurate, real-time environmental data and actionable, eco-friendly advice.
 - Always prefer official NASA data from sources like POWER, AIRS, MERRA-2, TEMPO, and GIBS. Explain NASA datasets and insights when relevant.
 - If NASA data is unavailable, you can use Open-Meteo as a fallback.
@@ -44,75 +45,76 @@ Your purpose is to provide users with accurate, real-time environmental data and
 - Provide answers based on the tools you have available.
 - If you don't know the answer, say so. Do not make up information.
 - Suggest eco-friendly actions and energy-saving tips where appropriate.`,
-      messages: history,
-      tools: {
-        getEnvironmentalData: {
-          description: ecoBot.description!,
-          inputSchema: ecoBot.inputSchema,
-          execute: ecoBot.fn,
-        },
-        callMakeWebhook: {
-          description: callMakeWebhook.description!,
-          inputSchema: callMakeWebhook.inputSchema,
-          execute: callMakeWebhook.fn,
-        }
+    messages: history,
+    tools: {
+      getEnvironmentalData: {
+        description: ecoBot.description!,
+        inputSchema: ecoBot.inputSchema,
+        execute: ecoBot.fn,
       },
-    });
+      callMakeWebhook: {
+        description: callMakeWebhook.description!,
+        inputSchema: callMakeWebhook.inputSchema,
+        execute: callMakeWebhook.fn,
+      },
+    },
+    onCompletion: async (completion, error, toolCalls) => {
+        if (error) {
+            console.error('Error during stream completion:', error);
+            stream.done();
+            return;
+        }
 
-    let fullResponse = '';
-    const fullResponsePromise = (async () => {
-      for await (const chunk of textStream) {
-        fullResponse += chunk;
-        stream.update(chunk);
-      }
-    })();
+        if (uid) {
+            const userChatHistoryRef = collection(
+                firestore,
+                `users/${uid}/chatHistory`
+            );
+            
+            // Save user message
+            if (userMessageContent) {
+                const userMessageData = {
+                    role: 'user',
+                    content: userMessageContent,
+                    timestamp: serverTimestamp(),
+                };
+                addDoc(userChatHistoryRef, userMessageData).catch(error => {
+                    const permissionError = new FirestorePermissionError({
+                        path: userChatHistoryRef.path,
+                        operation: 'create',
+                        requestResourceData: userMessageData,
+                    });
+                    errorEmitter.emit('permission-error', permissionError);
+                });
+            }
 
-    const userMessageContent = userMessage?.content[0].text;
-    if (uid && userMessageContent) {
-      const userChatHistoryRef = collection(
-        firestore,
-        `users/${uid}/chatHistory`
-      );
-      const userMessageData = {
-        role: 'user',
-        content: userMessageContent,
-        timestamp: serverTimestamp(),
-      };
-
-      addDoc(userChatHistoryRef, userMessageData).catch(error => {
-        const permissionError = new FirestorePermissionError({
-          path: userChatHistoryRef.path,
-          operation: 'create',
-          requestResourceData: userMessageData,
-        });
-        errorEmitter.emit('permission-error', permissionError);
-      });
+            // Save model response
+            if (completion) {
+                const modelMessageData = {
+                    role: 'model',
+                    content: completion,
+                    timestamp: serverTimestamp(),
+                };
+                addDoc(userChatHistoryRef, modelMessageData).catch(error => {
+                    const permissionError = new FirestorePermissionError({
+                        path: userChatHistoryRef.path,
+                        operation: 'create',
+                        requestResourceData: modelMessageData,
+                    });
+                    errorEmitter.emit('permission-error', permissionError);
+                });
+            }
+        }
+        stream.done();
+    },
+  }).then(async ({textStream}) => {
+    for await (const delta of textStream) {
+        stream.update(delta);
     }
-    
-    await fullResponsePromise;
-
-    if (uid && fullResponse) {
-      const modelChatHistoryRef = collection(
-        firestore,
-        `users/${uid}/chatHistory`
-      );
-      const modelMessageData = {
-        role: 'model',
-        content: fullResponse,
-        timestamp: serverTimestamp(),
-      };
-      addDoc(modelChatHistoryRef, modelMessageData).catch(error => {
-        const permissionError = new FirestorePermissionError({
-          path: modelChatHistoryRef.path,
-          operation: 'create',
-          requestResourceData: modelMessageData,
-        });
-        errorEmitter.emit('permission-error', permissionError);
-      });
-    }
-
+  }).catch((e) => {
+    console.error("Error in streamText call", e);
     stream.done();
-  })();
+  });
 
   return { stream: stream.value };
 }
