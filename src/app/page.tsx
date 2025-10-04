@@ -9,16 +9,13 @@ import { ForecastTabs } from '@/components/dashboard/forecast-tabs';
 import { HistoricalChartCard } from '@/components/dashboard/historical-chart-card';
 import { getWeatherData } from './actions/get-weather-data';
 import { getHistoricalData } from './actions/get-historical-data';
-import { Thermometer, Droplets, CloudRain, ThermometerSun, ThermometerSnowflake, Wind, Gauge, Bot, Sparkles } from 'lucide-react';
+import { Thermometer, Droplets, CloudRain, ThermometerSun, ThermometerSnowflake, Wind, Gauge } from 'lucide-react';
 import type { CurrentConditions, Forecast, HistoricalDataPoint } from '@/lib/types';
 import { Card, CardHeader, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useLocation } from '@/hooks/use-location';
 import { AreaHealthAnalysisCard } from '@/components/dashboard/area-health-analysis-card';
 import { ClimateIndexCard } from '@/components/dashboard/climate-index-card';
-import { AIAssistantCard } from '@/components/dashboard/ai-assistant-card';
-import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from '@/components/ui/dialog';
 
 
 const getAirQualitySummary = (
@@ -208,33 +205,6 @@ export default function Home() {
           data30d={historicalData30d}
           isLoading={isLoading}
         />
-
-        <Dialog>
-          <DialogTrigger asChild>
-            <Button
-              variant="default"
-              size="icon"
-              className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg"
-              aria-label="Activate AI Assistant"
-            >
-              <Bot className="h-6 w-6" />
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl p-0">
-             <DialogHeader className="p-6 pb-0">
-                <DialogTitle>
-                    <div className="flex items-center gap-3">
-                        <Sparkles className="h-6 w-6 text-primary" />
-                        <span>NASA Data Assistant</span>
-                    </div>
-                </DialogTitle>
-                <DialogDescription>
-                    Ask questions about historical environmental data for your location.
-                </DialogDescription>
-            </DialogHeader>
-            <AIAssistantCard />
-          </DialogContent>
-        </Dialog>
       </main>
     </div>
   );
