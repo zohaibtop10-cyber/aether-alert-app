@@ -49,9 +49,9 @@ export default function RootLayout({
                         <main className="flex-1 overflow-y-auto">
                             <MotionWrapper>{children}</MotionWrapper>
                         </main>
+                        <EcoBotChatWidget />
                     </div>
                 </SidebarInset>
-                <EcoBotChatWidget />
               </SidebarProvider>
               <Toaster />
             </LocationProvider>
