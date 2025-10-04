@@ -24,6 +24,9 @@ import {
   GitCompare,
   CalendarClock,
   MessageSquare,
+  BookUser,
+  Database,
+  FileText,
 } from 'lucide-react';
 import { ThemeToggle } from './theme-toggle';
 import { usePathname } from 'next/navigation';
@@ -71,6 +74,16 @@ const communityNav = [
     href: '/community/posts',
     icon: MessageSquare,
   },
+  {
+    title: 'Articles',
+    href: '/community/articles',
+    icon: FileText,
+  },
+  {
+    title: 'Data',
+    href: '/community/data',
+    icon: Database,
+  },
 ];
 
 export default function AppSidebar() {
@@ -98,9 +111,8 @@ export default function AppSidebar() {
         <SidebarMenu>
           {sidebarNav.map((item) => (
             <SidebarMenuItem key={item.title}>
-              <Link href={item.href} legacyBehavior passHref>
+              <Link href={item.href} asChild>
                 <SidebarMenuButton
-                  as="a"
                   isActive={pathname === item.href}
                   icon={<item.icon />}
                 >
@@ -117,9 +129,8 @@ export default function AppSidebar() {
               <SidebarMenuSub>
                 {communityNav.map((item) => (
                   <SidebarMenuSubItem key={item.title}>
-                    <Link href={item.href} legacyBehavior passHref>
+                    <Link href={item.href} asChild>
                       <SidebarMenuSubButton
-                        as="a"
                         isActive={pathname.startsWith(item.href)}
                         icon={<item.icon />}
                       >
@@ -132,8 +143,8 @@ export default function AppSidebar() {
             </CollapsibleContent>
           </Collapsible>
           <SidebarMenuItem>
-            <Link href="/profile" legacyBehavior passHref>
-              <SidebarMenuButton as="a" isActive={pathname === '/profile'} icon={<User />}>
+            <Link href="/profile" asChild>
+              <SidebarMenuButton isActive={pathname === '/profile'} icon={<User />}>
                 Profile
               </SidebarMenuButton>
             </Link>
