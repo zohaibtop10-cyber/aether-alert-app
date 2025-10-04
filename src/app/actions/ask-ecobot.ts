@@ -20,6 +20,19 @@ export async function askEcoBot(
   const stream = createStreamableValue();
 
   (async () => {
+    // Extract user message for webhook call
+    const userMessage = history[history.length - 1];
+    if (userMessage && userMessage.role === 'user' && userMessage.content[0].text) {
+      // Non-blocking call to the webhook
+      callMakeWebhook({ 
+        data: { 
+          userInput: userMessage.content[0].text,
+          location: location,
+          uid: uid
+        } 
+      });
+    }
+
     const { stream: textStream } = await streamText({
       model: 'googleai/gemini-1.5-pro-latest',
       prompt: `You are EcoBot, a friendly and knowledgeable AI assistant for the ECOWARRIOR web app.
@@ -49,9 +62,7 @@ Your purpose is to provide users with accurate, real-time environmental data and
     }
 
     // Save user message to Firestore if UID is available
-    if (uid) {
-      const userMessage = history.pop();
-      if (userMessage && userMessage.role === 'user') {
+    if (uid && userMessage && userMessage.role === 'user') {
         const userChatHistoryRef = collection(
           firestore,
           `users/${uid}/chatHistory`
@@ -70,7 +81,7 @@ Your purpose is to provide users with accurate, real-time environmental data and
             });
             errorEmitter.emit('permission-error', permissionError);
         });
-      }
+      
     }
 
     // When the stream is finished, save the model's response
