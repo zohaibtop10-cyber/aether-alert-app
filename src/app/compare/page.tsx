@@ -42,6 +42,7 @@ export default function ComparePage() {
 
     const [beforeImageUrl, setBeforeImageUrl] = useState<string | null>(null);
     const [afterImageUrl, setAfterImageUrl] = useState<string | null>(null);
+    const [imageError, setImageError] = useState<boolean>(false);
     
     const today = new Date();
     // GIBS data might have a delay of a day or two
@@ -52,6 +53,9 @@ export default function ComparePage() {
         if (!loc) return;
         
         startTransition(() => {
+            setImageError(false);
+            setBeforeImageUrl(null);
+            setAfterImageUrl(null);
             try {
                 const afterUrl = getGIBSEarthImageUrl(recentDate, loc.lat, loc.lon);
                 const beforeUrl = getGIBSEarthImageUrl(oneYearAgo, loc.lat, loc.lon);
@@ -59,8 +63,7 @@ export default function ComparePage() {
                 setBeforeImageUrl(beforeUrl);
             } catch (e) {
                 console.error("Error generating image URLs", e);
-                setAfterImageUrl(null);
-                setBeforeImageUrl(null);
+                setImageError(true);
             }
         });
     }
@@ -69,13 +72,18 @@ export default function ComparePage() {
     useEffect(() => {
         if (userLocation && !comparisonLocation) {
             setComparisonLocation(userLocation);
+            if (userLocation.city) {
+              setLocationName(`${userLocation.city}, ${userLocation.country}`);
+            }
         }
     }, [userLocation, comparisonLocation]);
     
     // Effect to generate images when comparison location changes
     useEffect(() => {
-        generateComparison(comparisonLocation);
-    }, [comparisonLocation, recentDate, oneYearAgo]);
+        if(comparisonLocation) {
+            generateComparison(comparisonLocation);
+        }
+    }, [comparisonLocation]);
 
 
     const handleRandomLocation = () => {
@@ -110,7 +118,7 @@ export default function ComparePage() {
             );
         }
 
-        if (isPending) {
+        if (isPending || (!beforeImageUrl && !afterImageUrl && !imageError)) {
             return (
                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <Card>
@@ -124,7 +132,8 @@ export default function ComparePage() {
                     </Card>
                     <Card>
                         <CardHeader>
-                            <Skeleton className="h-6 w-3/4" />
+                            <Skeleton className="h-6 w-3
+/4" />
                             <Skeleton className="h-4 w-1/2" />
                         </CardHeader>
                         <CardContent>
@@ -135,7 +144,7 @@ export default function ComparePage() {
             )
         }
 
-        if (!beforeImageUrl || !afterImageUrl) {
+        if (imageError || !beforeImageUrl || !afterImageUrl) {
             return (
                 <div className="flex flex-col items-center justify-center text-center gap-4 text-muted-foreground">
                     <AlertTriangle className="h-12 w-12" />
@@ -160,7 +169,7 @@ export default function ComparePage() {
                             height={600}
                             className="rounded-lg object-cover aspect-square bg-muted"
                             unoptimized
-                            onError={() => setBeforeImageUrl(null)}
+                            onError={() => setImageError(true)}
                         />
                     </CardContent>
                 </Card>
@@ -177,7 +186,7 @@ export default function ComparePage() {
                             height={600}
                             className="rounded-lg object-cover aspect-square bg-muted"
                             unoptimized
-                            onError={() => setAfterImageUrl(null)}
+                            onError={() => setImageError(true)}
                         />
                     </CardContent>
                 </Card>
@@ -195,7 +204,7 @@ export default function ComparePage() {
                     </p>
                 </div>
                 <div className="flex items-center gap-2">
-                    <Button onClick={() => generateComparison(comparisonLocation)} disabled={isPending}>
+                    <Button onClick={() => generateComparison(comparisonLocation)} disabled={isPending || !comparisonLocation}>
                         <RefreshCw className={`mr-2 h-4 w-4 ${isPending ? 'animate-spin' : ''}`} />
                         Refresh
                     </Button>
