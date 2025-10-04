@@ -4,7 +4,7 @@ import { ecoBot } from '@/ai/flows/eco-bot';
 import { streamText } from '@genkit-ai/ai';
 import { CoreMessage } from '@genkit-ai/ai/message';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
-import { initializeFirebase } from '@/firebase';
+import { initializeFirebase } from '@/firebase/server'; // Use server-side init
 import { createStreamableValue } from 'ai/rsc';
 
 export async function askEcoBot(
@@ -13,7 +13,7 @@ export async function askEcoBot(
   uid: string | null
 ) {
   'use server';
-  const { firestore } = initializeFirebase();
+  const { firestore } = await initializeFirebase(); // Now an async call
   const stream = createStreamableValue();
 
   (async () => {
