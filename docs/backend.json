@@ -98,12 +98,29 @@
       "description": "A general community post.",
       "type": "object",
       "properties": {
-        "content": { "type": "string" },
+        "title": {
+          "type": "string",
+          "description": "The title of the post."
+        },
+        "description": {
+          "type": "string",
+          "description": "The main content/body of the post."
+        },
+        "category": {
+          "type": "string",
+          "enum": ["Discussion", "Announcement", "Resource", "Question"],
+          "description": "The category of the post for filtering."
+        },
+        "documentUrl": {
+          "type": "string",
+          "format": "uri",
+          "description": "An optional URL to an attached document."
+        },
         "authorId": { "type": "string" },
         "authorName": { "type": "string" },
         "createdAt": { "type": "string", "format": "date-time" }
       },
-      "required": ["content", "authorId", "createdAt"]
+      "required": ["title", "description", "category", "authorId", "createdAt"]
     }
   },
   "auth": {
