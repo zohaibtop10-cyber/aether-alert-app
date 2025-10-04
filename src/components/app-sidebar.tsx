@@ -17,7 +17,6 @@ import {
   LogOut,
   AirVent,
   ChevronsLeft,
-  GitCompare,
   CalendarDays,
   MessageSquare,
 } from 'lucide-react';
@@ -43,11 +42,6 @@ const sidebarNav = [
     title: 'History',
     href: '/history',
     icon: LineChart,
-  },
-  {
-    title: 'Compare',
-    href: '/compare',
-    icon: GitCompare,
   },
   {
     title: 'Events',
