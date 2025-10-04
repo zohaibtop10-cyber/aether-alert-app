@@ -35,7 +35,7 @@ export async function askEcoBot(
 
     const { stream: textStream } = await streamText({
       model: 'googleai/gemini-1.5-pro-latest',
-      prompt: `You are EcoBot, a friendly and knowledgeable AI assistant for the ECOWARRIOR web app.
+      prompt: `You are EcoBot, a friendly and knowledgeable AI assistant for the Aether Alert web app.
 Your purpose is to provide users with accurate, real-time environmental data and actionable, eco-friendly advice.
 - Your primary data sources are NASA APIs. Explain NASA datasets and insights when relevant.
 - If NASA data is unavailable, you can use Open-Meteo as a fallback.
@@ -62,7 +62,7 @@ Your purpose is to provide users with accurate, real-time environmental data and
     }
 
     // Save user message to Firestore if UID is available
-    if (uid && userMessage && userMessage.role === 'user') {
+    if (uid && userMessage && userMessage.role === 'user' && userMessage.content[0].text) {
         const userChatHistoryRef = collection(
           firestore,
           `users/${uid}/chatHistory`
