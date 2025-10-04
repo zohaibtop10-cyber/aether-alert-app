@@ -54,6 +54,11 @@ const sidebarNav = [
     href: '/history',
     icon: LineChart,
   },
+  {
+    title: 'Compare',
+    href: '/compare',
+    icon: GitCompare,
+  },
 ];
 
 const communityNav = [
@@ -66,11 +71,6 @@ const communityNav = [
     title: 'Articles',
     href: '/community/articles',
     icon: Newspaper,
-  },
-  {
-    title: 'Compare',
-    href: '/community/compare',
-    icon: GitCompare,
   },
   {
     title: 'Data',
