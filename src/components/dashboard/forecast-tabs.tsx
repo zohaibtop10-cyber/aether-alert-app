@@ -38,7 +38,7 @@ export function ForecastTabs({ daily, hourly }: ForecastTabsProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Forecast</CardTitle>
+        <CardTitle as="h2">Forecast</CardTitle>
         <CardDescription>Daily and hourly weather predictions.</CardDescription>
       </CardHeader>
       <CardContent>

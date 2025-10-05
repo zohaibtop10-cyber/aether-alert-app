@@ -15,7 +15,7 @@ export default function AlertsPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>No Alerts Yet</CardTitle>
+          <CardTitle as="h2">No Alerts Yet</CardTitle>
           <CardDescription>
             When important environmental events happen, your alerts will appear here.
           </CardDescription>

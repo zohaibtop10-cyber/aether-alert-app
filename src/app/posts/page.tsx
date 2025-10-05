@@ -227,6 +227,86 @@ export default function PostsPage() {
         );
     }, [posts, searchQuery, selectedCategory]);
 
+    const renderContent = () => {
+        if (isLoading) {
+            return (
+                <motion.div 
+                    variants={containerVariants}
+                    initial="hidden"
+                    animate="visible"
+                    className="grid gap-6 md:grid-cols-1 lg:grid-cols-2"
+                >
+                    {Array.from({ length: 4 }).map((_, i) => (
+                        <motion.div key={i} variants={itemVariants}>
+                            <Card>
+                                <CardHeader>
+                                    <Skeleton className="h-8 w-3/4" />
+                                    <Skeleton className="h-4 w-1/2" />
+                                </CardHeader>
+                                <CardContent>
+                                    <Skeleton className="h-16 w-full" />
+                                </CardContent>
+                                <CardFooter>
+                                    <Skeleton className="h-6 w-1/4" />
+                                </CardFooter>
+                            </Card>
+                        </motion.div>
+                    ))}
+                </motion.div>
+            );
+        }
+
+        if (filteredPosts.length > 0) {
+            return (
+                <motion.div 
+                    variants={containerVariants}
+                    initial="hidden"
+                    animate="visible"
+                    className="grid gap-6 md:grid-cols-1 lg:grid-cols-2"
+                >
+                    {filteredPosts.map(post => (
+                        <motion.div key={post.id} variants={itemVariants}>
+                            <Card className="flex flex-col h-full hover:border-primary/50 hover:-translate-y-1">
+                                <CardHeader>
+                                   <div className="flex justify-between items-start gap-2">
+                                         <CardTitle as="h2" className="text-xl line-clamp-2">{post.title}</CardTitle>
+                                         <Badge variant="outline">{post.category}</Badge>
+                                   </div>
+                                   <div className="flex items-center gap-2 text-sm text-muted-foreground pt-2">
+                                         <UserCircle className="h-5 w-5" />
+                                         <span>{post.authorName}</span>
+                                         <span>·</span>
+                                         <span>{post.createdAt ? formatDistanceToNow(post.createdAt.toDate(), { addSuffix: true }) : 'just now'}</span>
+                                   </div>
+                                </CardHeader>
+                                <CardContent className="flex-grow">
+                                    <p className="text-sm text-foreground/80 whitespace-pre-wrap">{post.description}</p>
+                                </CardContent>
+                                <CardFooter>
+                                    {post.documentUrl && (
+                                        <Button variant="secondary" asChild>
+                                            <Link href={post.documentUrl} target="_blank" rel="noopener noreferrer">
+                                                View Document
+                                                <ExternalLink className="ml-2 h-4 w-4" />
+                                            </Link>
+                                        </Button>
+                                    )}
+                                </CardFooter>
+                            </Card>
+                        </motion.div>
+                    ))}
+                </motion.div>
+            );
+        }
+
+        return (
+            <div className="text-center text-muted-foreground py-12 col-span-1 lg:col-span-2">
+                <p className="font-semibold text-lg">No Posts Found</p>
+                <p className="text-sm">{searchQuery || selectedCategory !== 'All' ? `Try adjusting your filters.` : 'Be the first to create a post!'}</p>
+            </div>
+        );
+    };
+
     return (
         <div className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -280,66 +360,8 @@ export default function PostsPage() {
                 </Select>
             </div>
 
-            <motion.div 
-                variants={containerVariants}
-                initial="hidden"
-                animate="visible"
-                className="grid gap-6 md:grid-cols-1 lg:grid-cols-2"
-            >
-                {isLoading && Array.from({ length: 4 }).map((_, i) => (
-                    <Card key={i}>
-                        <CardHeader>
-                            <Skeleton className="h-8 w-3/4" />
-                            <Skeleton className="h-4 w-1/2" />
-                        </CardHeader>
-                        <CardContent>
-                            <Skeleton className="h-16 w-full" />
-                        </CardContent>
-                        <CardFooter>
-                            <Skeleton className="h-6 w-1/4" />
-                        </CardFooter>
-                    </Card>
-                ))}
+            {renderContent()}
 
-                {!isLoading && filteredPosts.map(post => (
-                    <motion.div key={post.id} variants={itemVariants}>
-                        <Card className="flex flex-col h-full hover:border-primary/50 hover:-translate-y-1">
-                            <CardHeader>
-                               <div className="flex justify-between items-start gap-2">
-                                     <CardTitle className="text-xl line-clamp-2">{post.title}</CardTitle>
-                                     <Badge variant="outline">{post.category}</Badge>
-                               </div>
-                               <div className="flex items-center gap-2 text-sm text-muted-foreground pt-2">
-                                     <UserCircle className="h-5 w-5" />
-                                     <span>{post.authorName}</span>
-                                     <span>·</span>
-                                     <span>{post.createdAt ? formatDistanceToNow(post.createdAt.toDate(), { addSuffix: true }) : 'just now'}</span>
-                               </div>
-                            </CardHeader>
-                            <CardContent className="flex-grow">
-                                <p className="text-sm text-foreground/80 line-clamp-3 whitespace-pre-wrap">{post.description}</p>
-                            </CardContent>
-                            <CardFooter>
-                                {post.documentUrl && (
-                                    <Button variant="secondary" asChild>
-                                        <Link href={post.documentUrl} target="_blank" rel="noopener noreferrer">
-                                            View Document
-                                            <ExternalLink className="ml-2 h-4 w-4" />
-                                        </Link>
-                                    </Button>
-                                )}
-                            </CardFooter>
-                        </Card>
-                    </motion.div>
-                ))}
-            </motion.div>
-
-            {!isLoading && filteredPosts.length === 0 && (
-                <div className="text-center text-muted-foreground py-12 col-span-1 lg:col-span-2">
-                    <p className="font-semibold text-lg">No Posts Found</p>
-                    <p className="text-sm">{searchQuery || selectedCategory !== 'All' ? `Try adjusting your filters.` : 'Be the first to create a post!'}</p>
-                </div>
-            )}
         </div>
     );
 }

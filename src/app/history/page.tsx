@@ -15,7 +15,7 @@ export default function HistoryPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Historical Data</CardTitle>
+          <CardTitle as="h2">Historical Data</CardTitle>
           <CardDescription>
             Detailed charts and analysis of past environmental conditions will be available here.
           </CardDescription>

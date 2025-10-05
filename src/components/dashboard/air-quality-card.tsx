@@ -23,7 +23,7 @@ export function AirQualityCard({ airQuality, summary }: AirQualityCardProps) {
     <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
-          <CardTitle>Air Quality</CardTitle>
+          <CardTitle as="h2">Air Quality</CardTitle>
           <Wind className="h-6 w-6 text-muted-foreground" />
         </div>
         <CardDescription>

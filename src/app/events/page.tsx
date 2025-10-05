@@ -62,7 +62,7 @@ function EventCard({ event }: { event: ClimateEvent }) {
     <Card className="flex flex-col hover:border-primary/50 hover:-translate-y-1">
       <CardHeader>
         <div className="flex justify-between items-start">
-          <CardTitle className="line-clamp-2">{event.title}</CardTitle>
+          <CardTitle as="h2" className="line-clamp-2 text-xl">{event.title}</CardTitle>
           <Badge variant={getSeverityBadge(event.severity)}>{event.severity}</Badge>
         </div>
         <CardDescription>

@@ -22,7 +22,6 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Separator } from '@/components/ui/separator';
 import { AirVent, Chrome } from 'lucide-react';
 import Link from 'next/link';
 import { useFirebase, useUser } from '@/firebase';

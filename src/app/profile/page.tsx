@@ -213,7 +213,7 @@ export default function ProfilePage() {
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
           <Card>
             <CardHeader>
-              <CardTitle>Personal Information</CardTitle>
+              <CardTitle as="h2">Personal Information</CardTitle>
               <CardDescription>
                 Update your name and location settings. Your selected city will be used for weather data.
               </CardDescription>
@@ -285,7 +285,7 @@ export default function ProfilePage() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Permissions & Health</CardTitle>
+              <CardTitle as="h2">Permissions & Health</CardTitle>
               <CardDescription>
                 Provide health info for personalized alerts and manage permissions.
               </CardDescription>

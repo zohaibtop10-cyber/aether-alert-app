@@ -50,7 +50,7 @@ export function HistoricalChartCard({ data7d, data30d, isLoading }: HistoricalCh
     <Card>
       <CardHeader className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <CardTitle>Historical Trends</CardTitle>
+          <CardTitle as="h2">Historical Trends</CardTitle>
           <CardDescription>View environmental data from the last 7 or 30 days.</CardDescription>
         </div>
         <div className="flex items-center gap-2">
