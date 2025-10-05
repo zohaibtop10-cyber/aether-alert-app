@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -13,6 +14,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { CalendarIcon, MapPin, Search, AlertTriangle, Wind, Droplets, Thermometer } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format, formatDistanceToNow, addDays, subDays, parseISO } from 'date-fns';
+import { enUS } from 'date-fns/locale';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { generateClimateEvents } from '@/app/actions/generate-climate-events';
@@ -76,7 +78,7 @@ function EventCard({ event }: { event: ClimateEvent }) {
         </div>
         <div className="flex items-start text-sm text-muted-foreground">
           <CalendarIcon className="mr-2 h-4 w-4 mt-1 shrink-0" />
-          <span>{event.date ? format(parseISO(event.date), 'PPP') : 'Date not set'}</span>
+          <span>{event.date ? format(parseISO(event.date), 'PPP', { locale: enUS }) : 'Date not set'}</span>
         </div>
         <div className="flex items-start text-sm text-muted-foreground">
           <MapPin className="mr-2 h-4 w-4 mt-1 shrink-0" />
@@ -86,7 +88,7 @@ function EventCard({ event }: { event: ClimateEvent }) {
       </CardContent>
       <CardFooter>
         <p className="text-xs text-muted-foreground">
-            Reported {event.date ? formatDistanceToNow(parseISO(event.date), { addSuffix: true }) : 'just now'}
+            Reported {event.date ? formatDistanceToNow(parseISO(event.date), { addSuffix: true, locale: enUS }) : 'just now'}
         </p>
       </CardFooter>
     </Card>
@@ -224,7 +226,7 @@ export default function EventsPage() {
                 {Array.from({ length: 6 }).map((_, i) => (
                 <Card key={i}>
                     <CardHeader>
-                    <Skeleton className="h-6 w-3/4" />
+                    <CardTitle as="h2"><Skeleton className="h-6 w-3/4" /></CardTitle>
                     <Skeleton className="h-4 w-1/2" />
                     </CardHeader>
                     <CardContent>
