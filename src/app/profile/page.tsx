@@ -135,11 +135,20 @@ export default function ProfilePage() {
     if (!user) return;
     setIsLoading(true);
 
+    const selectedCountryData = countries.find(c => c.name === values.country);
+    const selectedCityData = selectedCountryData?.cities.find(city => city.name === values.city);
+
     const userRef = doc(firestore, 'users', user.uid);
     const userData: any = {
       name: values.name,
       email: user.email,
       healthConditions: values.healthConditions,
+      location: {
+        lat: selectedCityData?.lat,
+        lon: selectedCityData?.lon,
+        city: values.city,
+        country: values.country,
+      },
     };
     
     // In a real app, you would get the FCM token if notifications are enabled
@@ -151,9 +160,6 @@ export default function ProfilePage() {
 
     setDoc(userRef, userData, { merge: true })
       .then(() => {
-        const selectedCountryData = countries.find(c => c.name === values.country);
-        const selectedCityData = selectedCountryData?.cities.find(city => city.name === values.city);
-
         if (selectedCityData) {
           setManualLocation({
             lat: selectedCityData.lat,
