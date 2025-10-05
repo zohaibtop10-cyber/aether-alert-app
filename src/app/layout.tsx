@@ -6,7 +6,6 @@ import { LocationProvider } from '@/hooks/use-location';
 import { FirebaseClientProvider } from '@/firebase';
 import { Sidebar, SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
 import AppSidebar from '@/components/app-sidebar';
-import { EcoBotChatWidget } from '@/components/ecobot/ecobot-chat-widget';
 import Header from '@/components/dashboard/header';
 import { MotionWrapper } from '@/components/motion-wrapper';
 
@@ -49,7 +48,6 @@ export default function RootLayout({
                         <main className="flex-1 overflow-y-auto">
                             <MotionWrapper>{children}</MotionWrapper>
                         </main>
-                        <EcoBotChatWidget />
                     </div>
                 </SidebarInset>
               </SidebarProvider>
