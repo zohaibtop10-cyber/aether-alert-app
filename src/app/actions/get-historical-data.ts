@@ -63,9 +63,7 @@ export async function getHistoricalData(location: Location, days: 7 | 30): Promi
                 date: formattedDate,
                 temperature: t2m[dateStr] !== fillValue ? parseFloat(t2m[dateStr].toFixed(2)) : 0,
                 rainfall: prectotcorr[dateStr] !== fillValue ? parseFloat(prectotcorr[dateStr].toFixed(2)) : 0,
-                // NASA POWER doesn't have historical PM2.5, using Pressure (PS) as a proxy for an air-related metric
                 pressure: ps[dateStr] !== fillValue ? parseFloat(ps[dateStr].toFixed(2)) : 0,
-                pm25: 0 // Keep pm25 as 0 since we're not fetching it
             };
         });
 

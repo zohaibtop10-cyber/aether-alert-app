@@ -40,6 +40,5 @@ export interface HistoricalDataPoint {
   date: string;
   temperature: number;
   rainfall: number;
-  pm25: number; // No longer directly used from NASA, but kept for type consistency
   pressure: number;
 }
