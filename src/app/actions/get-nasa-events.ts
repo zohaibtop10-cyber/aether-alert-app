@@ -56,7 +56,7 @@ async function getLocationFromCoordinates(geometry: NasaEventGeometry): Promise<
     try {
         const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`;
         const response = await fetch(url, {
-            headers: { 'User-Agent': 'AetherAlert/1.0 (NASA Event Fetcher)' },
+            headers: { 'User-Agent': 'MyClimateGuard/1.0 (NASA Event Fetcher)' },
             next: { revalidate: 86400 } // Cache for a day
         });
 

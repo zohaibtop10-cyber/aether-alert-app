@@ -10,7 +10,7 @@ import Header from '@/components/dashboard/header';
 import { MotionWrapper } from '@/components/motion-wrapper';
 
 export const metadata: Metadata = {
-  title: 'Aether Alert',
+  title: 'MyClimateGuard',
   description: 'Real-time environmental conditions, weather predictions, and health alerts.',
 };
 

@@ -155,7 +155,7 @@ export default function SignupPage() {
             <AirVent className="h-10 w-10 text-primary" />
           </div>
           <CardTitle className="text-2xl">Create an Account</CardTitle>
-          <CardDescription>Join Aether Alert to stay informed.</CardDescription>
+          <CardDescription>Join MyClimateGuard to stay informed.</CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>

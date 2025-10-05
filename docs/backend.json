@@ -35,28 +35,6 @@
       },
       "required": ["email"]
     },
-    "ChatHistory": {
-      "title": "Chat History",
-      "description": "Represents a single message in a chat session with EcoBot.",
-      "type": "object",
-      "properties": {
-        "role": {
-          "type": "string",
-          "enum": ["user", "model"],
-          "description": "Who sent the message."
-        },
-        "content": {
-          "type": "string",
-          "description": "The text content of the message."
-        },
-        "timestamp": {
-          "type": "string",
-          "format": "date-time",
-          "description": "When the message was sent."
-        }
-      },
-      "required": ["role", "content", "timestamp"]
-    },
     "Alert": {
       "title": "Alert",
       "description": "Represents a health or environmental alert sent to a user.",
@@ -130,10 +108,6 @@
     "/users/{uid}": {
       "schema": { "$ref": "#/entities/UserProfile" },
       "description": "Stores public profile information for each user."
-    },
-    "/users/{uid}/chatHistory/{messageId}": {
-      "schema": { "$ref": "#/entities/ChatHistory" },
-      "description": "Stores the chat history for each user with the EcoBot assistant."
     },
     "/alerts/{alertId}": {
       "schema": { "$ref": "#/entities/Alert" },

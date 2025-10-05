@@ -72,7 +72,7 @@ export default function AppSidebar() {
         <div className="flex items-center gap-2">
           <AirVent className="h-7 w-7 text-primary" />
           <span className="text-lg font-semibold tracking-tight">
-            Aether Alert
+            MyClimateGuard
           </span>
         </div>
       </SidebarHeader>

@@ -25,7 +25,7 @@ export async function getLocationDetails(
   try {
     const response = await fetch(url, {
       headers: {
-        'User-Agent': 'AetherAlert/1.0 (https://your-app-url.com)', // Replace with your app's info
+        'User-Agent': 'MyClimateGuard/1.0 (https://your-app-url.com)', // Replace with your app's info
       },
     });
 
